@@ -10,6 +10,8 @@ abstract class Routes {
   static const ONBODDING = _Paths.ONBODDINGSCREEN;
   static const LETYOUINSCREEN = _Paths.LETYOUINSCREEN;
   static const REGISTERSCREEN = _Paths.REGISTERSCREEN;
+  static const LoginScreen = _Paths.LOGINSCREEN;
+  static const HomeScreen = _Paths.HOMESCREEN;
 
 }
 
@@ -20,6 +22,8 @@ abstract class _Paths {
   static const ONBODDINGSCREEN = '/onBodding';
   static const LETYOUINSCREEN = '/LETYOUINSCREEN';
   static const REGISTERSCREEN = '/RegisterScreen';
+  static const LOGINSCREEN = '/LoginScreen';
 
+  static const HOMESCREEN = '/HomeScreen';
 
 }

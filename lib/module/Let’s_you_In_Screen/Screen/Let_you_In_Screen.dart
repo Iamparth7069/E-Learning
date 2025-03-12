@@ -102,7 +102,7 @@ class LetsYouInScreen extends StatelessWidget {
                     child: MaterialButton(
                       color: AppColor.ButtonColor,
                       onPressed: () {
-                        // Get.toNamed(Routes.LOGIN);
+                         Get.toNamed(Routes.LoginScreen);
                       },
                       height: 26,
                       padding: EdgeInsets.all(10),
