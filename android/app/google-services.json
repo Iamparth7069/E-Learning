@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "691081345107",
+    "project_id": "shaktihub-e8db2",
+    "storage_bucket": "shaktihub-e8db2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:691081345107:android:989c3d9ecb664ef13a2ea6",
+        "android_client_info": {
+          "package_name": "com.example.shaktihub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMM7YFSArEUU6tCb2oGalkLbxbwqt2dv0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
