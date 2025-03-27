@@ -3,9 +3,6 @@ import 'package:get/get.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:shaktihub/Constraint/extension.dart';
 import 'package:sizer/sizer.dart';
-import 'package:lottie/lottie.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import '../../../Constraint/appTextStyle.dart';
 import '../../../Constraint/app_color.dart';
 import '../../../routes/app_pages.dart';
 import '../controller/login_controller.dart';
@@ -86,6 +83,7 @@ class _LoginState extends State<Login> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: customTextFormField(
+                              textEditingController: controller.emailController,
                               prefix: Image.asset("assets/images/email.png"),
                               hintText: "Email Address",
                               validator: (p0) {
@@ -102,6 +100,7 @@ class _LoginState extends State<Login> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: customTextFormField(
+                              textEditingController: controller.passwordController,
                               prefix: Image.asset("assets/images/lock.png"),
                               hintText: "Password",
                               validator: (p0) {
@@ -135,7 +134,7 @@ class _LoginState extends State<Login> {
                                 child: Center(
                                     child: Text(
                                       "Sign in",
-                                      style: TextStyle(color: Colors.white, fontSize: 15),
+                                      style: TextStyle(color: Colors.white, fontSize: 2.5.h),
                                     )),
                               ),
                             ),
@@ -151,7 +150,7 @@ class _LoginState extends State<Login> {
                                 onTap: () {
                                   // Get.toNamed(Routes.REGISTERSCREEN);
                                 },
-                                child: "Forgot the password ?".mediumReadex(fontColor: AppColor.ButtonColor,fontSize: 12)),
+                                child: "Forgot the password ?".mediumReadex(fontColor: AppColor.ButtonColor,fontSize: 2.h)),
                           ),
                           SizedBox(height: 3.h),
                           // Divider below Apple button
@@ -184,7 +183,7 @@ class _LoginState extends State<Login> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              "Don't have an account?".mediumReadex(fontColor: Color(0xff6A8FA3)),
+                              "Don't have an account?".mediumReadex(fontColor: Color(0xff6A8FA3),fontSize: 2.h),
                               SizedBox(
                                 width: 5,
                               ),
@@ -192,7 +191,7 @@ class _LoginState extends State<Login> {
                                   onTap: () {
                                     Get.toNamed(Routes.REGISTERSCREEN);
                                   },
-                                  child: "Sign up".mediumReadex(fontColor: AppColor.ButtonColor)),
+                                  child: "Sign up".mediumReadex(fontColor: AppColor.ButtonColor,fontSize: 2.h)),
 
                             ],
                           )

@@ -19,6 +19,8 @@ class SharedPrefHelper {
   static const String token = "token";
   static const String userEmail = "userEmail";
   static const String userPassword = "userPassword";
+  static const String OnboddingVisiting = "onBodding";
+  static const String loginStatus = "loginStatus";
 
 
   /// Save String value

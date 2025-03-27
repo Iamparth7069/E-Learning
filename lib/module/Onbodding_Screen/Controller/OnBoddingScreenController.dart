@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shaktihub/routes/app_pages.dart';
 
+import '../../../SharedPrefrance/SharedPrefrance_helper.dart';
+
 
 
 class Onboddingscreencontroller extends GetxController{
@@ -22,6 +24,9 @@ class Onboddingscreencontroller extends GetxController{
       );
       update();
     } else {
+      String key = SharedPrefHelper.OnboddingVisiting;
+      SharedPrefHelper sharedPrefHelper = SharedPrefHelper();
+      sharedPrefHelper.setBool(key, true);
       // await LocalStorage.setOndogging(bio: true);
        Get.offAllNamed(Routes.LETYOUINSCREEN);
     }

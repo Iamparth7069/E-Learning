@@ -2,7 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shaktihub/SharedPrefrance/SharedPrefrance_helper.dart';
 import 'package:shaktihub/api/url/api_url.dart';
+import 'package:shaktihub/module/login/Model/UserModel.dart';
 
 
 import '../../../api/listing/api_listing.dart';
@@ -16,8 +18,6 @@ class LoginController extends GetxController {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  Rx<User?> user = Rx<User?>(null);
-  String? get userId => user.value?.uid;
   RxBool isLoading = false.obs;
   final GoogleSignIn googleSignIn = GoogleSignIn();
   final key = GlobalKey<FormState>();
@@ -48,7 +48,7 @@ class LoginController extends GetxController {
         'password': passwordController.text.trim().toString()
       };
 
-      print("Request URL: ${ApiUrl.registerApi}");
+      print("Request URL: ${ApiUrl.loginApi}");
       print("Request Body: $body");
 
       try{
@@ -60,7 +60,15 @@ class LoginController extends GetxController {
         debugPrint("Response: ${response.toString()}");
         if (response['statusCode'] == 200 || response['statusCode'] == 201) {
           // Show success popup
-          
+          print("Login Successful: ${response['response']}");
+          Map<String,dynamic> data = response['response'];
+          UserModel userData = UserModel.fromJson(data);
+          SharedPrefHelper sh1 = SharedPrefHelper();
+          String key = SharedPrefHelper.token;
+          sh1.setString(key, userData.token);
+          String login = SharedPrefHelper.loginStatus;
+          sh1.setBool(login, true);
+          Get.offAllNamed(Routes.HomeScreen);
         } else {
           // Show error message
           Get.snackbar("Error", response['response'] ?? "Registration failed",
@@ -68,8 +76,15 @@ class LoginController extends GetxController {
         }
       }catch(e){
 
+          isLoading.value = false;
+          update();
+      }finally{
+        isLoading.value = false;
+        update();
       }
+
     }
+    update();
 
   }
 
