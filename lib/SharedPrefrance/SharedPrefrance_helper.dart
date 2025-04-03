@@ -21,7 +21,7 @@ class SharedPrefHelper {
   static const String userPassword = "userPassword";
   static const String OnboddingVisiting = "onBodding";
   static const String loginStatus = "loginStatus";
-
+  static const String IsAdmin = "IsAAdmin";
 
   /// Save String value
   Future<void> setString(String key, String value) async {
@@ -72,4 +72,5 @@ class SharedPrefHelper {
   Future<void> clear() async {
     await _preferences?.clear();
   }
+
 }

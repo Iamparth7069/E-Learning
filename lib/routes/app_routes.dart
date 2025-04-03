@@ -12,18 +12,24 @@ abstract class Routes {
   static const REGISTERSCREEN = _Paths.REGISTERSCREEN;
   static const LoginScreen = _Paths.LOGINSCREEN;
   static const HomeScreen = _Paths.HOMESCREEN;
+  static const DeskBord = _Paths.deskBoard;
+  static const AdminHome = _Paths.AdminHomeScreen;
+  static const AdminDeskBoard = _Paths.DESKBOARDFORADMIN;
 
 }
 
 abstract class _Paths {
-  _Paths._();
 
+  _Paths._();
+  static const deskBoard = '/deskBoard';
   static const SPLASH = '/';
   static const ONBODDINGSCREEN = '/onBodding';
   static const LETYOUINSCREEN = '/LETYOUINSCREEN';
   static const REGISTERSCREEN = '/RegisterScreen';
   static const LOGINSCREEN = '/LoginScreen';
-
+  static const AdminHomeScreen = '/AdminHomeScreen';
   static const HOMESCREEN = '/HomeScreen';
+  static const DESKBOARDFORADMIN = '/DeskBoardAdmin';
+
 
 }

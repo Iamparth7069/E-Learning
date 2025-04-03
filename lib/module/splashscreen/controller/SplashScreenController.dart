@@ -25,12 +25,20 @@ class SplashScreenController extends GetxController {
 
       String key = SharedPrefHelper.OnboddingVisiting;
       String loginKey = SharedPrefHelper.loginStatus;
+      String Isadmin = SharedPrefHelper.IsAdmin;
 
       bool val = sharedPrefHelper.getBool(key);
       bool log = sharedPrefHelper.getBool(loginKey);
+      bool AdminStatus = sharedPrefHelper.getBool(Isadmin);
 
       if(log){
-        Get.offAllNamed(Routes.HomeScreen);
+        if(AdminStatus){
+          Get.offAllNamed(Routes.AdminDeskBoard,arguments: 0);
+
+        }else{
+          Get.offAllNamed(Routes.DeskBord,arguments: 0);
+
+        }
       }else {
         if (val) {
           Get.offAllNamed(Routes.LETYOUINSCREEN);

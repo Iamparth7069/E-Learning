@@ -22,7 +22,6 @@ class LoginController extends GetxController {
   final GoogleSignIn googleSignIn = GoogleSignIn();
   final key = GlobalKey<FormState>();
 
-
   @override
   void onClose() {
     emailController.dispose();
@@ -37,56 +36,63 @@ class LoginController extends GetxController {
   }
 
   Future<void> login() async {
-    if(key.currentState!.validate()){
+    if (key.currentState!.validate()) {
       isLoading.value = true;
       update();
 
       Map<String, String> headers = {'Content-Type': 'application/json'};
-
       Map<String, dynamic> body = {
         'email': emailController.text.trim(),
-        'password': passwordController.text.trim().toString()
+        'password': passwordController.text.trim()
       };
 
       print("Request URL: ${ApiUrl.loginApi}");
       print("Request Body: $body");
 
-      try{
+      try {
         Map<String, dynamic> response = await NetworkService.makePostRequest(
           url: ApiUrl.loginApi,
           headers: headers,
           body: body,
         );
+
         debugPrint("Response: ${response.toString()}");
-        if (response['statusCode'] == 200 || response['statusCode'] == 201) {
-          // Show success popup
-          print("Login Successful: ${response['response']}");
-          Map<String,dynamic> data = response['response'];
+
+        if (response.containsKey('statusCode') &&
+            (response['statusCode'] == 200 || response['statusCode'] == 201)) {
+
+          Map<String, dynamic> data = response['response'];
+
           UserModel userData = UserModel.fromJson(data);
+          print("User Role is ${userData.token}");
           SharedPrefHelper sh1 = SharedPrefHelper();
-          String key = SharedPrefHelper.token;
-          sh1.setString(key, userData.token);
-          String login = SharedPrefHelper.loginStatus;
-          sh1.setBool(login, true);
-          Get.offAllNamed(Routes.HomeScreen);
+          sh1.setString(SharedPrefHelper.token, userData.token);
+          sh1.setBool(SharedPrefHelper.loginStatus, true);
+          if (userData.user.role == "ROLE_ADMIN") {
+            print("This is an Admin User");
+            sh1.setBool(SharedPrefHelper.IsAdmin,true);
+
+            Get.offAllNamed(Routes.AdminDeskBoard,arguments: 0);
+          } else {
+            print("This is a Normal User");
+            Get.offAllNamed(Routes.DeskBord,arguments: 0);
+          }
         } else {
-          // Show error message
-          Get.snackbar("Error", response['response'] ?? "Registration failed",
+          print("Error For Debugging");
+          Get.snackbar("Error", response['response'] ?? "Login failed",
               snackPosition: SnackPosition.BOTTOM);
         }
-      }catch(e){
-
-          isLoading.value = false;
-          update();
-      }finally{
+      } catch (e) {
+        print("Exception caught: $e");
+        Get.snackbar("Error", "Something went wrong. Please try again later.",
+            snackPosition: SnackPosition.BOTTOM);
+      } finally {
         isLoading.value = false;
         update();
       }
-
     }
-    update();
-
   }
+
 
 
 

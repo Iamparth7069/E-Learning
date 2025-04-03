@@ -38,12 +38,11 @@ class User {
     return User(
       userId: json['userId'],
       firstName: json['firstName'],
-      lastName: json['lastName'],
+      lastName:  json["lastName"] == null ?  "" : json['lastName'],
       email: json['email'],
       role: json['role'],
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,

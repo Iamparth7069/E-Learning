@@ -17,5 +17,6 @@ class AppColor {
 
   static const Color mainTextColor = Color(0xFF2A343E);
 
+  static const Color midTextColor = Color(0xFF747B85);
 
 }

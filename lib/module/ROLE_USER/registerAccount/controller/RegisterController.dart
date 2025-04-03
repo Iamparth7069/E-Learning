@@ -2,8 +2,8 @@ import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../api/listing/api_listing.dart';
-import '../../../api/url/api_url.dart';
+import '../../../../api/listing/api_listing.dart';
+import '../../../../api/url/api_url.dart';
 
 
 
