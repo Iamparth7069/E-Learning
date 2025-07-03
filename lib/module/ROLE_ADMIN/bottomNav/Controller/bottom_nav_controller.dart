@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shaktihub/module/ROLE_ADMIN/Cource%20Managment/Screen/CategoryManageAdmin.dart';
 import 'package:shaktihub/module/ROLE_ADMIN/Home/screen/home_Admin.dart';
+import 'package:shaktihub/module/ROLE_ADMIN/Setting/screen/SettingScreen.dart';
 import 'package:shaktihub/module/ROLE_USER/Category/screen/CategoryScreen.dart';
 
 import '../../../ROLE_USER/dashboard/model/NavigationModel.dart';
@@ -20,7 +22,7 @@ class AdminNavController extends GetxController{
   void onInit() {
     // TODO: implement onInit
     super.onInit();
-    pageIndex = Get.arguments as int;
+    pageIndex = Get.arguments as int? ?? 0;
     init();
   }
 
@@ -28,8 +30,8 @@ class AdminNavController extends GetxController{
 
     screens = [
       NavigationModel(name: "Home", icon: "assets/Icon/home.png", iconFilled: "assets/Icon/homeFilled.png", screen:  HomeAdmin()),
-      NavigationModel(name: "Category", icon: "assets/Icon/category.png", iconFilled: "assets/Icon/categoryFilled.png", screen: const CategoryScreen()),
-      NavigationModel(name: "Search", icon: "assets/Icon/search.png", iconFilled: "assets/Icon/searchFill.png", screen: const SearchScreen()),
+      NavigationModel(name: "User Manage", icon: "assets/Icon/category.png", iconFilled: "assets/Icon/categoryFilled.png", screen:  CategoryManagmentAdmin()),
+      NavigationModel(name: "Setting", icon: "assets/Icon/settings.png", iconFilled: "assets/Icon/settingfill.png", screen:  SettingScreen()),
     ];
   }
 

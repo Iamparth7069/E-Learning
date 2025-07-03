@@ -117,7 +117,7 @@ class _LoginState extends State<Login> {
                           Obx(
                                 () => controller.isLoading.value
                                 ? LoadingAnimationWidget.hexagonDots(
-                                color: AppColor.appBackColor, size: 5.h)
+                                color: AppColor.loadingColor, size: 5.h)
                                 : Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 20),
                               child: MaterialButton(

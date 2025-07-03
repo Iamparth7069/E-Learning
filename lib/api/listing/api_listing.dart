@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../SharedPrefrance/SharedPrefrance_helper.dart';
 import '../../routes/app_pages.dart';
 
 class NetworkService {
@@ -12,27 +13,37 @@ class NetworkService {
     Map<String, String>? headers,
   }) async {
     var connectivityResult = await Connectivity().checkConnectivity();
+
     if (connectivityResult == ConnectivityResult.none) {
       return {
-        'response': "",
+        'response': "No internet connection",
         'statusCode': 500,
       };
     }
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      // String? token = prefs.getString(PrefConstantsKey.token);
 
       headers ??= {
         'Content-Type': 'application/json',
-        // 'Authorization': 'Bearer ${token ?? ""}',
+        // Uncomment if you need a token:
+        'Authorization': 'bearerToken ${prefs.getString(SharedPrefHelper.token) ?? ''}',
       };
 
       final response = await http.get(Uri.parse(url), headers: headers);
 
-      return {
-        'response': jsonDecode(response.body),
-        'statusCode': response.statusCode,
-      };
+      if (response.body.isNotEmpty &&
+          response.headers['content-type']?.contains('application/json') == true) {
+        return {
+          'response': jsonDecode(response.body),
+          'statusCode': response.statusCode,
+        };
+      } else {
+        // Handle non-JSON or empty response gracefully
+        return {
+          'response': response.body,
+          'statusCode': response.statusCode,
+        };
+      }
     } catch (e) {
       print('Error: $e');
       return {
@@ -41,6 +52,7 @@ class NetworkService {
       };
     }
   }
+
 
   static Future<Map<String, dynamic>> makePostRequest({
     required String url,
@@ -128,4 +140,56 @@ class NetworkService {
       };
     }
   }
+
+
+  static Future<Map<String, dynamic>> makePutRequest({
+    required String url,
+    Map<String, String>? headers,
+    Map<String, dynamic>? body,
+  }) async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      return {
+        'response': "No Internet Connection",
+        'statusCode': 500,
+      };
+    }
+
+    try {
+      headers ??= {'Content-Type': 'application/json'};
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print("PUT Request to: $url");
+      print("Headers: $headers");
+      print("Body: $body");
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      dynamic parsedBody;
+      if (response.body.isNotEmpty &&
+          response.headers['content-type']?.contains('application/json') == true) {
+        parsedBody = jsonDecode(response.body);
+      } else {
+        parsedBody = response.body;
+      }
+
+      return {
+        'response': parsedBody,
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      print('Error in PUT request: $e');
+      return {
+        'response': 'Request failed: $e',
+        'statusCode': 500,
+      };
+    }
+  }
+
+
 }

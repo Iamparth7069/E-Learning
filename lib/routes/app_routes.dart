@@ -15,7 +15,15 @@ abstract class Routes {
   static const DeskBord = _Paths.deskBoard;
   static const AdminHome = _Paths.AdminHomeScreen;
   static const AdminDeskBoard = _Paths.DESKBOARDFORADMIN;
+  static const SubCategory = _Paths.subCategoryPage;
 
+
+
+
+  //admin Side
+
+
+  static const AdminCategoryAdd = _Paths.ADMINCATEGORYADD;
 }
 
 abstract class _Paths {
@@ -30,6 +38,13 @@ abstract class _Paths {
   static const AdminHomeScreen = '/AdminHomeScreen';
   static const HOMESCREEN = '/HomeScreen';
   static const DESKBOARDFORADMIN = '/DeskBoardAdmin';
+
+
+
+
+//admin Side
+  static const ADMINCATEGORYADD = '/AdminCategoryAdd';
+  static const subCategoryPage = '/SubCategoryScreen';
 
 
 }

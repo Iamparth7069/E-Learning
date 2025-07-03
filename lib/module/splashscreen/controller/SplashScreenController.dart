@@ -17,7 +17,7 @@ class SplashScreenController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _navigate();
+     _navigate();
   }
 
   void _navigate() async {
@@ -30,6 +30,7 @@ class SplashScreenController extends GetxController {
       bool val = sharedPrefHelper.getBool(key);
       bool log = sharedPrefHelper.getBool(loginKey);
       bool AdminStatus = sharedPrefHelper.getBool(Isadmin);
+      Get.offAllNamed(Routes.LETYOUINSCREEN);
 
       if(log){
         if(AdminStatus){
@@ -46,8 +47,6 @@ class SplashScreenController extends GetxController {
           Get.offAllNamed(Routes.ONBODDING);
         }
       }
-
-      // Get.offAllNamed(Routes.DASHBOARD);
     });
   }
 

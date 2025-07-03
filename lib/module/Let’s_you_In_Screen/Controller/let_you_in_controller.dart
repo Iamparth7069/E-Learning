@@ -1,7 +1,15 @@
 
+import 'dart:convert';
+
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart';
+import '../../../api/listing/api_listing.dart';
+import '../../../api/url/api_url.dart';
+import '../../../routes/app_pages.dart';
 
 
 class Lets_You_in_controller extends GetxController {
@@ -12,6 +20,18 @@ class Lets_You_in_controller extends GetxController {
   //     '229528905608-hprheq53ee8q3ggkvgcrem91fe54qn09.apps.googleusercontent.com');
 
   // String? get userId => user.value?.uid;
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'profile',
+      'openid', // ✅ REQUIRED for ID Token
+    ],
+
+    serverClientId: '867126694749-7t9ii4an3ad7pv9dmc4a6766pcjt5rkk.apps.googleusercontent.com',
+
+  );
+  GoogleSignInAccount? user;
 
   RxBool isLoading = false.obs;
 
@@ -139,4 +159,51 @@ class Lets_You_in_controller extends GetxController {
 //     );
 //   }
 // }
+
+  Future<void> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        print('❌ User canceled Google Sign-In');
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser
+          .authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        print("❌ ID Token is null. Ensure SHA-1 fingerprint is set up in Firebase.");
+        return;
+      }
+
+
+
+      // Prepare request to backend
+      final Map<String, String> headers = {'Content-Type': 'application/json'};
+      final Map<String, dynamic> body = {'idToken': idToken};
+
+      print("📡 Sending ID Token to Backend: ${ApiUrl.googleLogin}");
+
+      final response = await NetworkService.makePostRequest(
+        url: ApiUrl.googleLogin,
+        headers: headers,
+        body: body,
+      );
+
+      print("🧾 Backend Response: $response");
+
+      if (response.containsKey('statusCode') &&
+          (response['statusCode'] == 200 || response['statusCode'] == 201)) {
+        print("✅ Login Successful");
+
+      } else {
+        print("❌ Login Failed: ${response['message'] ?? 'Unknown error'}");
+      }
+    } catch (e) {
+      print("❌ Exception during Google Sign-In: $e");
+    }
+  }
 }
+

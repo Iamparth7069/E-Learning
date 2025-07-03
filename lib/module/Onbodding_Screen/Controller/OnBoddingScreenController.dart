@@ -27,7 +27,7 @@ class Onboddingscreencontroller extends GetxController{
       String key = SharedPrefHelper.OnboddingVisiting;
       SharedPrefHelper sharedPrefHelper = SharedPrefHelper();
       sharedPrefHelper.setBool(key, true);
-      // await LocalStorage.setOndogging(bio: true);
+       //await LocalStorage.setOndogging(bio: true);
        Get.offAllNamed(Routes.LETYOUINSCREEN);
     }
   }

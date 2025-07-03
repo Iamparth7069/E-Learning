@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shaktihub/module/ROLE_ADMIN/CaregoryManage/screen/updateCategory.dart';
+import 'package:shaktihub/module/ROLE_ADMIN/CaregoryManage/screen/updateSubCategory.dart';
+
+import '../../../../routes/app_pages.dart';
 
 class AppDrawer extends StatelessWidget {
   @override
@@ -41,15 +45,29 @@ class AppDrawer extends StatelessWidget {
                 leading: Icon(Icons.subdirectory_arrow_right, color: Colors.blue),
                 title: Text("Add Category"),
                 onTap: () {
-
+                  Get.toNamed(Routes.AdminCategoryAdd);
                 },
               ),
               ListTile(
                 leading: Icon(Icons.subdirectory_arrow_right, color: Colors.blue),
-                title: Text("Sub Category 2"),
+                title: Text("Sub SubCategory"),
                 onTap: () {
-                  Get.snackbar("Sub Category", "Clicked on Sub Category 2");
-                },
+                  Get.toNamed(Routes.SubCategory);                },
+              ),
+              ListTile(
+                leading: Icon(Icons.subdirectory_arrow_right, color: Colors.blue),
+                title: Text("Update Category"),
+                onTap: () {
+                  Get.to(UpdateCategory());                },
+              ),
+
+              ListTile(
+                leading: Icon(Icons.subdirectory_arrow_right, color: Colors.blue),
+                title: Text("Update SubCategory"),
+                onTap: () {
+                  Get.to(UpdateSubCategory());
+
+                  },
               ),
             ],
           ),

@@ -27,7 +27,7 @@ class SplashScreen extends StatelessWidget {
                 children: [
                   Image.asset(
                     height: 250,
-                    'assets/images/logo.png', // Replace with your actual logo path
+                    'assets/images/logoBBG.png', // Replace with your actual logo path
                     // Adjust size as needed
                   ),
                   const SizedBox(height: 30), // Space between logo and loader

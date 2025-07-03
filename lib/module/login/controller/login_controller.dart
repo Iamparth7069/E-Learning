@@ -9,6 +9,7 @@ import 'package:shaktihub/module/login/Model/UserModel.dart';
 
 import '../../../api/listing/api_listing.dart';
 import '../../../routes/app_pages.dart';
+import '../../ROLE_INSTRUCTORS/Home/homeScreenInstractor.dart';
 
 
 class LoginController extends GetxController {
@@ -39,7 +40,6 @@ class LoginController extends GetxController {
     if (key.currentState!.validate()) {
       isLoading.value = true;
       update();
-
       Map<String, String> headers = {'Content-Type': 'application/json'};
       Map<String, dynamic> body = {
         'email': emailController.text.trim(),
@@ -69,15 +69,16 @@ class LoginController extends GetxController {
           sh1.setString(SharedPrefHelper.token, userData.token);
           sh1.setBool(SharedPrefHelper.loginStatus, true);
           if (userData.user.role == "ROLE_ADMIN") {
-            print("This is an Admin User");
             sh1.setBool(SharedPrefHelper.IsAdmin,true);
-
             Get.offAllNamed(Routes.AdminDeskBoard,arguments: 0);
-          } else {
+          } else if(userData.user.role == "ROLE_INSTRUCTOR"){
+            Get.offAll(HomeInstructor());
+          }else {
             print("This is a Normal User");
             Get.offAllNamed(Routes.DeskBord,arguments: 0);
           }
         } else {
+          isLoading.value = false;
           print("Error For Debugging");
           Get.snackbar("Error", response['response'] ?? "Login failed",
               snackPosition: SnackPosition.BOTTOM);
@@ -145,4 +146,8 @@ class LoginController extends GetxController {
   //     // Handle error further if needed
   //   }
   // }
+
+
+
+
 }

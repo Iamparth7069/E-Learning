@@ -22,7 +22,6 @@ class SharedPrefHelper {
   static const String OnboddingVisiting = "onBodding";
   static const String loginStatus = "loginStatus";
   static const String IsAdmin = "IsAAdmin";
-
   /// Save String value
   Future<void> setString(String key, String value) async {
     await _preferences?.setString(key, value);

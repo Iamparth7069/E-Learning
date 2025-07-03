@@ -61,11 +61,11 @@ class _OnBordingScreenState extends State<OnBordingScreen> {
                                 : AppColor.ButtonColor,
                             borderRadius: BorderRadius.circular(controller.currentPageIndex == index ? 10 : 15),
                           ),
-                        ).paddingSymmetric(horizontal: 1.w);
+                        ).paddingSymmetric(horizontal: 0.5.w);
                       },
                     ),
                   ),
-                  8.h.addHSpace(),
+                  6.h.addHSpace(),
                   appButton(
                     fontSize: 20,
                     color: AppColor.ButtonColor,
@@ -84,19 +84,28 @@ class _OnBordingScreenState extends State<OnBordingScreen> {
 
   Widget _page1() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 35),
+      padding: const EdgeInsets.symmetric(horizontal: 30),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(
             height: 50.h,
             width: 65.w,
-            child: assetImage("assets/images/onBodding1.png", fit: BoxFit.fitWidth),
+            child: assetImage("assets/images/onbodding1.png", fit: BoxFit.fitWidth),
           ),
-          AppString.onBording1title.boldReadex(
-              fontColor: AppColor.blackColor, fontSize: 17.sp, textAlign: TextAlign.start),
-          AppString.description.boldRoboto(
-              fontColor: AppColor.blackColor, fontSize: 15.sp, textAlign: TextAlign.start)
+          Text('Learn Anytime',
+              style: TextStyle(
+                color: AppColor.blackColor,
+                fontSize: 22.sp,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center),
+          Text('Study at your own pace with flexible schedules and learn from anywhere.',
+              style: TextStyle(
+                color: AppColor.blackColor,
+                fontSize: 16.8.sp,
+              ),
+              textAlign: TextAlign.center),
         ],
       ),
     );
@@ -111,12 +120,21 @@ class _OnBordingScreenState extends State<OnBordingScreen> {
           SizedBox(
             height: 50.h,
             width: 65.w,
-            child: assetImage("assets/images/onBodding1.png", fit: BoxFit.fitWidth),
+            child: assetImage("assets/images/onbodding2.png", fit: BoxFit.fitWidth),
           ),
-          AppString.onBording2.boldReadex(
-              fontColor: AppColor.blackColor, fontSize: 17.sp, textAlign: TextAlign.start),
-          AppString.onBording2description.boldRoboto(
-              fontColor: AppColor.blackColor, fontSize: 15.sp, textAlign: TextAlign.start)
+          Text('Find Your Course',
+              style: TextStyle(
+                color: AppColor.blackColor,
+                fontSize: 22.sp,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center),
+          Text('Choose from a range of subjects and find a course that suits you.',
+              style: TextStyle(
+                color: AppColor.blackColor,
+                fontSize: 16.8.sp,
+              ),
+              textAlign: TextAlign.center),
         ],
       ),
     );
@@ -131,15 +149,25 @@ class _OnBordingScreenState extends State<OnBordingScreen> {
           SizedBox(
             height: 50.h,
             width: 65.w,
-            child: assetImage("assets/images/onBodding1.png", fit: BoxFit.fitWidth),
+            child: assetImage("assets/images/onbodding3.png", fit: BoxFit.fitWidth),
           ),
-          AppString.onBording3.boldReadex(
-              fontColor: AppColor.blackColor, fontSize: 17.sp, textAlign: TextAlign.start),
-          AppString.onBording3description.boldRoboto(
-              fontColor: AppColor.blackColor, fontSize: 15.sp, textAlign: TextAlign.start)
+          Text('Achieve Your Goals',
+              style: TextStyle(
+                color: AppColor.blackColor,
+                fontSize: 22.sp,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center),
+          Text('Boost your skills, earn certifications, and advance your career.',
+              style: TextStyle(
+                color: AppColor.blackColor,
+                fontSize: 16.8.sp,
+              ),
+              textAlign: TextAlign.center),
         ],
       ),
     );
   }
+
 
 }

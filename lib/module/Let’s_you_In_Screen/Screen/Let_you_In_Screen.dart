@@ -6,7 +6,6 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:shaktihub/Constraint/extension.dart';
 import 'package:shaktihub/routes/app_pages.dart';
 import 'package:sizer/sizer.dart';
-import 'package:flutter_svg/svg.dart';
 import '../../../../Constraint/app_color.dart';
 import '../Controller/let_you_in_controller.dart';
 
@@ -18,7 +17,7 @@ class LetsYouInScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColor.appBackColor,
       body: Stack(
-        children: [
+        children:  [
           Positioned(
             top: -70,
             left: -20,
@@ -35,7 +34,7 @@ class LetsYouInScreen extends StatelessWidget {
                   child: SizedBox(
                     height: 250,
                     width: 250,
-                    child: assetImage("assets/images/img.png", fit: BoxFit.fitWidth),
+                    child: assetImage("assets/images/removebg.png", fit: BoxFit.fitWidth),
                   ),
                 ),
                 SizedBox(
@@ -51,7 +50,8 @@ class LetsYouInScreen extends StatelessWidget {
                   height: 4.h,
                 ),
 
-                createLoginButton(onPressed: () {
+                createLoginButton(onPressed: () async {
+                    await controllers.signInWithGoogle();
 
                 }, text: "Continue with Google", imagePath: "assets/images/search.png", borderColor: Colors.white),
 
