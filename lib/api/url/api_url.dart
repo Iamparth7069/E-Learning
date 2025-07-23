@@ -15,6 +15,9 @@ class ApiUrl {
   static const updateCategory = '${baseUrl}api/v1/categories/';
   static const updateSubCategory = '${baseUrl}api/v1/subcategories/';
   static const getAllSubCategoryById = '${baseUrl}api/v1/subcategories/category/';
-  static const getAllCourse = '${baseUrl}api/v1/courses/all';
+  static const getAllCourse = '${baseUrl}api/v1/courses/instructor/my-courses';
+  static const AddCourse = '${baseUrl}api/v1/courses/';
+  static const CourseEnableApi = '${baseUrl}api/v1/courses/';
 
+  static const addLession = '${baseUrl}api/v1/lessons/';
 }

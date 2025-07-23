@@ -21,33 +21,34 @@ class SplashScreenController extends GetxController {
   }
 
   void _navigate() async {
-    Future.delayed(const Duration(seconds: 2),(){
+    await Future.delayed(const Duration(seconds: 2));
 
-      String key = SharedPrefHelper.OnboddingVisiting;
-      String loginKey = SharedPrefHelper.loginStatus;
-      String Isadmin = SharedPrefHelper.IsAdmin;
+    String onboardingKey = SharedPrefHelper.OnboddingVisiting;
+    String loginKey = SharedPrefHelper.loginStatus;
+    String adminKey = SharedPrefHelper.IsAdmin;
+    String instructorKey = SharedPrefHelper.instructorLoginStatus;
 
-      bool val = sharedPrefHelper.getBool(key);
-      bool log = sharedPrefHelper.getBool(loginKey);
-      bool AdminStatus = sharedPrefHelper.getBool(Isadmin);
-      Get.offAllNamed(Routes.LETYOUINSCREEN);
+    bool isOnboarded = sharedPrefHelper.getBool(onboardingKey);
+    bool isLoggedIn = sharedPrefHelper.getBool(loginKey);
+    bool isAdmin = sharedPrefHelper.getBool(adminKey);
+    bool isInstructor = sharedPrefHelper.getBool(instructorKey);
 
-      if(log){
-        if(AdminStatus){
-          Get.offAllNamed(Routes.AdminDeskBoard,arguments: 0);
-
-        }else{
-          Get.offAllNamed(Routes.DeskBord,arguments: 0);
-
-        }
-      }else {
-        if (val) {
-          Get.offAllNamed(Routes.LETYOUINSCREEN);
-        } else {
-          Get.offAllNamed(Routes.ONBODDING);
-        }
+    if (isLoggedIn) {
+      if (isAdmin) {
+        Get.offAllNamed(Routes.AdminDeskBoard, arguments: 0);
+      } else if (isInstructor) {
+        Get.offAllNamed(Routes.InstructorScreen, arguments: 0);
+      } else {
+        Get.offAllNamed(Routes.DeskBord, arguments: 0);
       }
-    });
+    } else {
+      if (isOnboarded) {
+        Get.offAllNamed(Routes.LETYOUINSCREEN);
+      } else {
+        Get.offAllNamed(Routes.ONBODDING);
+      }
+    }
   }
+
 
 }

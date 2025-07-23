@@ -9,13 +9,10 @@ import 'package:shaktihub/module/login/Model/UserModel.dart';
 
 import '../../../api/listing/api_listing.dart';
 import '../../../routes/app_pages.dart';
-import '../../ROLE_INSTRUCTORS/Home/homeScreenInstractor.dart';
+import '../../ROLE_INSTRUCTORS/Home/screen/homeScreenInstractor.dart';
 
 
 class LoginController extends GetxController {
-
-
-
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -62,17 +59,21 @@ class LoginController extends GetxController {
             (response['statusCode'] == 200 || response['statusCode'] == 201)) {
 
           Map<String, dynamic> data = response['response'];
-
           UserModel userData = UserModel.fromJson(data);
           print("User Role is ${userData.token}");
           SharedPrefHelper sh1 = SharedPrefHelper();
           sh1.setString(SharedPrefHelper.token, userData.token);
+          String userName = userData.user.firstName;
+
+          sh1.setString(SharedPrefHelper.userName, userName);
+
           sh1.setBool(SharedPrefHelper.loginStatus, true);
           if (userData.user.role == "ROLE_ADMIN") {
             sh1.setBool(SharedPrefHelper.IsAdmin,true);
             Get.offAllNamed(Routes.AdminDeskBoard,arguments: 0);
           } else if(userData.user.role == "ROLE_INSTRUCTOR"){
-            Get.offAll(HomeInstructor());
+            sh1.setBool(SharedPrefHelper.instructorLoginStatus, true);
+            Get.offAllNamed(Routes.InstructorScreen);
           }else {
             print("This is a Normal User");
             Get.offAllNamed(Routes.DeskBord,arguments: 0);

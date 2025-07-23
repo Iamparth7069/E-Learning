@@ -6,6 +6,7 @@ import '../module/Let’s_you_In_Screen/Screen/Let_you_In_Screen.dart';
 import '../module/Onbodding_Screen/Screen/OnBoddingScreen.dart';
 import '../module/ROLE_ADMIN/CaregoryManage/screen/categoryAdd.dart';
 import '../module/ROLE_ADMIN/Home/screen/home_Admin.dart';
+import '../module/ROLE_INSTRUCTORS/BottomNavBar/Screen/bottomNavBarinInstructor.dart';
 import '../module/ROLE_USER/dashboard/screen/deskBoardScreen.dart';
 import '../module/ROLE_USER/home/screen/homeScreen.dart';
 import '../module/ROLE_USER/registerAccount/screen/RegisterScreen.dart';
@@ -67,6 +68,10 @@ class AppPages {
       page: () => SubCategory(),
     ),
 
+    GetPage(
+      name: _Paths.INSTRUCTORSCREEN,
+      page: () => BottomNavScreen(),
+    ),
 
   ];
 }

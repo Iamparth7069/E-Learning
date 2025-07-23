@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:shaktihub/Constraint/extension.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../../../routes/app_pages.dart';
 import '../controller/RegisterController.dart';
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -135,9 +136,21 @@ class RegisterScreen extends StatelessWidget {
                           ),
                         ),
                         SizedBox(
-                          height: 2.h,
+                          height: 1.h,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            "Register With Instructors ?".mediumReadex(fontColor: Color(0xff6A8FA3)),
+                            Checkbox(value: controller.isChecked, onChanged: (value) {
+                              controller.checkBoxUpdated(value!);
+                            },),
+                          ],
                         ),
 
+                        SizedBox(
+                          height: 1.h,
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: MaterialButton(
@@ -185,6 +198,8 @@ class RegisterScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+
+
                         SizedBox(
                           height: 2.h,
                         ),
@@ -197,12 +212,12 @@ class RegisterScreen extends StatelessWidget {
                             ),
                             GestureDetector(
                                 onTap: () {
-                                  // Get.toNamed(Routes.REGISTERSCREEN);
+                                  Get.toNamed(Routes.LoginScreen);
                                 },
                                 child: "Sign in".mediumReadex(fontColor: AppColor.ButtonColor)),
-
                           ],
-                        )
+                        ),
+
                       ],
                     ),
                   ),

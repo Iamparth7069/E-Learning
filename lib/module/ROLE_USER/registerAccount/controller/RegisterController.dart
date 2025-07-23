@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -16,6 +15,7 @@ class RegisterController extends GetxController{
 
   RxBool isLoading = false.obs;
   final formKey = GlobalKey<FormState>();
+  bool isChecked = false;
 
 
   @override
@@ -34,6 +34,7 @@ class RegisterController extends GetxController{
         'password': password.text,
         'firstName': firstName.text.trim(),
         'lastName': lastName.text.trim(),
+        'role' : isChecked ? 'ROLE_INSTRUCTOR' : 'ROLE_STUDENT'
       };
 
       print("Request URL: ${ApiUrl.registerApi}");
@@ -58,7 +59,8 @@ class RegisterController extends GetxController{
             confirmTextColor: Colors.white,
             onConfirm: () {
               Get.back(); // Close dialog
-              Get.back(); // Navigate back to the previous screen
+              Get.back();
+
             },
           );
         } else {
@@ -72,6 +74,11 @@ class RegisterController extends GetxController{
         update();
       }
     }
+  }
+
+  void checkBoxUpdated(bool booleanValues){
+    isChecked = booleanValues;
+    update();
   }
 
 
