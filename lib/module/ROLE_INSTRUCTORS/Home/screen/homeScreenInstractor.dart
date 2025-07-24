@@ -4,6 +4,7 @@ import 'package:get/get_core/src/get_main.dart';
 
 import '../../AddLession/Screen/AddLessonScreen.dart';
 import '../../CourseManagment/AddCourse/Screen/AddCourse.dart';
+import '../../showAllCourse/screen/ShowAllLession.dart';
 import '../controller/homeScreenInstructorController.dart';
 import '../widgets/CourseCard.dart';
 import '../widgets/SubCategoryFilter.dart';
@@ -48,8 +49,6 @@ class _HomeInstructorState extends State<HomeInstructor> {
 
         // ✅ BODY WITH OBSERVABLE COURSE FILTER
       body: Obx(() {
-
-
         if (controller.isLoading.value) {
           return const Center(
             child: CircularProgressIndicator(),
@@ -133,7 +132,7 @@ class _HomeInstructorState extends State<HomeInstructor> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () {
-                          Get.to(() => AddLessonScreen(courseId: course.courseId));
+                          Get.to(() => ShowLession(courseId: course.courseId));
                         },
                         child: CourseCardManagment(course: course),
                       ),

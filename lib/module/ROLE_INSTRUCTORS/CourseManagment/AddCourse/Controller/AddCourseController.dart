@@ -3,15 +3,22 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart';
-
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 import '../../../../../SharedPrefrance/SharedPrefrance_helper.dart';
 import '../../../../../api/listing/api_listing.dart';
 import '../../../../../api/url/api_url.dart';
 import '../../../../ROLE_ADMIN/Home/model/categoryAllModel.dart';
 import '../../../../ROLE_ADMIN/Home/model/subCategoryModel.dart';
+import '../../../Home/Model/CourseModel.dart';
 
 class AddCourseController extends GetxController {
+  final CourseModel? course;
+
+  AddCourseController({this.course});
+
   var isLoading = false.obs;
   var uploading = false.obs;
 
@@ -27,13 +34,18 @@ class AddCourseController extends GetxController {
   List<CategoryModel> allCategory = [];
   List<SubCategoryModel> subCategory = [];
 
-  var showNextPage = false.obs;
   final Rx<File?> selectedImage = Rx<File?>(null);
 
   @override
   void onInit() {
     super.onInit();
     getAllCategory();
+    if (course != null) {
+      courseName.text = course!.courseName!.toString();
+      courseDescription.text = course!.courseDescription!.toString();
+      selectSubCategoryId.value = course!.subCategoryId ?? 0;
+    }
+    // courseName.text = .isEmpty ? "" : cName;
   }
 
   Future<void> getAllCategory() async {
@@ -51,10 +63,18 @@ class AddCourseController extends GetxController {
 
       if (response["statusCode"] == 200) {
         List<dynamic> jsonList = response['response'];
-        allCategory = jsonList.map((item) => CategoryModel.fromJson(item)).toList();
-        selectedCategoryId.value = allCategory[0].categoryId;
+        allCategory =
+            jsonList.map((item) => CategoryModel.fromJson(item)).toList();
+
+        /// ✅ If editing, find correct category from subcategory
+        if (course != null) {
+          await getAllSubCategoryForCourse(course!.subCategoryId!);
+        } else {
+          selectedCategoryId.value = allCategory[0].categoryId;
+          await getAllSubCategory(selectedCategoryId.value);
+        }
+
         update();
-        print('✅ Categories loaded successfully');
       } else {
         print('❌ Error loading categories: ${response['response']}');
       }
@@ -78,7 +98,8 @@ class AddCourseController extends GetxController {
 
       if (response["statusCode"] == 200) {
         List<dynamic> jsonList = response['response'];
-        subCategory = jsonList.map((item) => SubCategoryModel.fromJson(item)).toList();
+        subCategory =
+            jsonList.map((item) => SubCategoryModel.fromJson(item)).toList();
         selectSubCategoryId.value = subCategory[0].subCategoryId;
         update();
         print('✅ SubCategories loaded successfully');
@@ -90,6 +111,33 @@ class AddCourseController extends GetxController {
     }
   }
 
+  Future<void> getAllSubCategoryForCourse(int subCategoryId) async {
+    for (var category in allCategory) {
+      final response = await NetworkService.makeGetRequest(
+        url: "${ApiUrl.getAllSubCategoryById}${category.categoryId}",
+        headers: {
+          'Authorization': 'Bearer ${sh1.getString(SharedPrefHelper.token)}',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response["statusCode"] == 200) {
+        List<dynamic> jsonList = response['response'];
+        List<SubCategoryModel> tempSubCats =
+            jsonList.map((item) => SubCategoryModel.fromJson(item)).toList();
+
+        if (tempSubCats.any((sub) => sub.subCategoryId == subCategoryId)) {
+          selectedCategoryId.value = category.categoryId;
+          subCategory = tempSubCats;
+          selectSubCategoryId.value = subCategoryId;
+          break;
+        }
+      }
+    }
+
+    update();
+  }
+
   Future<void> pickJpegFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -99,95 +147,107 @@ class AddCourseController extends GetxController {
     if (result != null && result.files.single.path != null) {
       String localPath = result.files.single.path!;
       File imageFile = File(localPath);
-
-      print("File Name is " + imageFile.path);
       selectedImage.value = imageFile; // ✅ Set the image file
       update(); // ✅ Refresh UI
-
-      print("📍 Image selected: $localPath");
     } else {
       print("⚠️ No image selected");
     }
   }
+
   void clearImage() {
     selectedImage.value = null;
     update();
   }
 
-
-
-
-
-  Future<void> uploadFile() async {
+  Future<bool> ManageCourse() async {
     try {
       uploading.value = true;
       update();
 
-      final token =  sh1.getString(SharedPrefHelper.token);
+      final token = sh1.getString(SharedPrefHelper.token);
       if (token == null) {
         print("❌ Missing token");
-        return;
       }
 
-      if (selectedImage.value == null) {
-        print("❌ No image selected");
-        return;
-      }
-
-      Map<String,dynamic> CourseData = {
-        'courseName': courseName.text.toString().trim(),
-        'courseDescription': courseDescription.text.toString().trim(),
+      // Prepare course data
+      Map<String, dynamic> courseUpdateData = {
+        'courseId': course!.courseId,
+        'courseName': courseName.text.trim(),
+        'courseDescription': courseDescription.text.trim(),
         'subCategoryId': selectSubCategoryId.value,
+        'image': course!.image?.toJson(), // if available
       };
 
-      final response = await NetworkService.makeMultipartPostRequest(
-        url: ApiUrl.AddCourse,
+      // 🔁 File list
+      List<Map<String, dynamic>> files = [];
+
+      if (selectedImage.value != null) {
+        print("Pick the File in Database");
+        final compressedFile = await compressImage(selectedImage.value!);
+
+        // ✅ User picked new image
+        files.add({
+          'name': 'file',
+          'filePath': compressedFile.path,
+        });
+
+      } else {
+        // ⚠️ No image selected → add empty dummy file
+        final tempDir = await getTemporaryDirectory();
+        final dummyPath = '${tempDir.path}/empty.txt';
+        final dummyFile = File(dummyPath);
+        if (!dummyFile.existsSync()) {
+          dummyFile.writeAsStringSync(''); // create an empty file
+        }
+        files.add({
+          'name': 'file',
+          'filePath': dummyPath,
+        });
+      }
+
+      final response = await NetworkService.makeMultipartPutRequest(
+        url: ApiUrl.AddCourse + course!.courseId.toString(),
         headers: {
           'Authorization': 'Bearer $token',
         },
         fields: {
-          'course': jsonEncode(CourseData),
+          'course': jsonEncode(courseUpdateData),
         },
-        files: [
-          {
-            'name': 'file',
-            'filePath': selectedImage.value!.path,
-          },
-        ],
+        files: files,
       );
 
-      print("Response is $response");
-
       if (response['statusCode'] == 200) {
-        Get.snackbar("Success", "Course uploaded successfully",
-            backgroundColor: Colors.green, colorText: Colors.white);
-      } else {
-        uploading.value = false;
-        update();
+        return true;
 
-        Get.snackbar("Error", response['response'].toString(),
-            backgroundColor: Colors.red, colorText: Colors.white);
+      } else {
+        return false;
+
       }
     } catch (e, stack) {
+      print("❌ Exception: $e");
+      print("📌 Stacktrace:\n$stack");
+      return false;
+    } finally {
       uploading.value = false;
       update();
-      print("Exception occurred: $e");
-      print(" Stacktrace:\n$stack");
     }
   }
 
+  Future<File> compressImage(File file) async {
+    final tempDir = await getTemporaryDirectory();
+    final targetPath = path.join(tempDir.path, 'compressed_${path.basename(file.path)}');
 
+    final compressedFile = await FlutterImageCompress.compressAndGetFile(
+      file.path,
+      targetPath,
+      quality: 60,
+    );
 
-
-
-
-  void goToNextPage() {
-    showNextPage.value = true;
-    update();
+    if (compressedFile != null) {
+      return File(compressedFile.path); // Safe return
+    } else {
+      return file; // Fall back to original file if compression fails
+    }
   }
 
-  void goBack() {
-    showNextPage.value = false;
-    update();
-  }
 }

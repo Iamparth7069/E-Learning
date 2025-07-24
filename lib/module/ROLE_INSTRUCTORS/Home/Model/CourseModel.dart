@@ -53,4 +53,16 @@ class CourseImage {
       objectName: json['objectName'],
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'imageId': imageId,
+      'fileName': fileName,
+      'imageUrl': imageUrl,
+      'contentType': contentType,
+      'objectName': objectName,
+    };
+  }
+
+
+
 }

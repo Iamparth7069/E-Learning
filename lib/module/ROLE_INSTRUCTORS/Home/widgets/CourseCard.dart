@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shaktihub/module/ROLE_INSTRUCTORS/CourseManagment/AddCourse/Screen/AddCourse.dart';
 import '../Model/CourseModel.dart';
 import '../controller/homeScreenInstructorController.dart';
 
@@ -12,7 +13,6 @@ class CourseCardManagment extends StatelessWidget {
   Widget build(BuildContext context) {
 
     final controller = Get.find<HomeScreenInstructorController>();
-    // Use a local observable for toggle switch state
     final isEnabled = RxBool(course.enabled ?? false);
 
     return Card(
@@ -59,14 +59,39 @@ class CourseCardManagment extends StatelessWidget {
 
                 // 🔽 Status Row
                 Obx(() => Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      isEnabled.value! ? Icons.check_circle : Icons.cancel,
-                      color: isEnabled.value! ? Colors.green : Colors.red,
-                      size: 20,
+                    Row(
+                      children: [
+                        Icon(
+                          isEnabled.value! ? Icons.check_circle : Icons.cancel,
+                          color: isEnabled.value! ? Colors.green : Colors.red,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(isEnabled.value! ? "Enabled" : "Disabled"),
+                      ],
                     ),
-                    const SizedBox(width: 6),
-                    Text(isEnabled.value! ? "Enabled" : "Disabled"),
+                    ElevatedButton(
+                      onPressed: () {
+                        Get.to(AddCourse(course: course));
+                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        minimumSize: const Size(70, 30), // square size
+                        padding: EdgeInsets.zero, // remove internal padding
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4), // square-like edges
+                          side: const BorderSide(color: Colors.blueAccent),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: const Text(
+                        "Edit",
+                        style: TextStyle(color: Colors.blueAccent),
+                      ),
+                    ),
+
                   ],
                 ),),
 

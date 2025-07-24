@@ -20,4 +20,6 @@ class ApiUrl {
   static const CourseEnableApi = '${baseUrl}api/v1/courses/';
 
   static const addLession = '${baseUrl}api/v1/lessons/';
+
+  static const getAllLession = '${baseUrl}api/v1/lessons/course/';
 }

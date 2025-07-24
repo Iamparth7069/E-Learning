@@ -26,7 +26,7 @@ class NetworkService {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       headers ??= {
         'Content-Type': 'application/json',
-        'Authorization': 'bearerToken ${prefs.getString(SharedPrefHelper.token) ?? ''}',
+        'Authorization': 'Bearer ${prefs.getString(SharedPrefHelper.token) ?? ''}',
       };
 
       final response = await _dio.get(url, options: Options(headers: headers));
@@ -169,4 +169,48 @@ class NetworkService {
       };
     }
   }
+
+  static Future<Map<String, dynamic>> makeMultipartPutRequest({
+    required String url,
+    Map<String, String>? headers,
+    Map<String, String>? fields,
+    List<Map<String, dynamic>>? files,
+  }) async {
+    final check = await _checkConnection();
+    if (check['error']) return {'response': check['message'], 'statusCode': 500};
+
+    try {
+      FormData formData = FormData.fromMap(fields ?? {});
+
+      if (files != null) {
+        for (var file in files) {
+          formData.files.add(
+            MapEntry(
+              file['name'],
+              await MultipartFile.fromFile(file['filePath']),
+            ),
+          );
+        }
+      }
+
+      final response = await _dio.put(
+        url,
+        data: formData,
+        options: Options(
+          headers: headers,
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      return {
+        'response': response.data,
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
 }
+
+

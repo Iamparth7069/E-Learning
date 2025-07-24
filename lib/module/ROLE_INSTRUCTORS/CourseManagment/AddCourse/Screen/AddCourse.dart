@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
-import 'package:shaktihub/Constraint/extension.dart';
+import 'package:shaktihub/module/ROLE_INSTRUCTORS/Home/Model/CourseModel.dart';
 import '../Controller/AddCourseController.dart';
 
 class AddCourse extends StatelessWidget {
-  const AddCourse({super.key});
+  final CourseModel? course;
+
+  const AddCourse({this.course, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final key = GlobalKey<FormState>();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Course')),
+      appBar:
+          AppBar(title: Text(course != null ? "Edit Course" : "Add Course")),
       body: SingleChildScrollView(
         child: GetBuilder<AddCourseController>(
-          init: AddCourseController(),
+          init: AddCourseController(course: course),
           builder: (controller) {
             if (controller.isLoading.value && controller.subCategory.isEmpty) {
               return const Center(child: CircularProgressIndicator());
@@ -37,7 +41,7 @@ class AddCourse extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-        
+
                     // Category Dropdown with decoration
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -48,8 +52,9 @@ class AddCourse extends StatelessWidget {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
                           isExpanded: true,
-                          value: controller.allCategory.any(
-                                  (cat) => cat.categoryId == controller.selectedCategoryId.value)
+                          value: controller.allCategory.any((cat) =>
+                                  cat.categoryId ==
+                                  controller.selectedCategoryId.value)
                               ? controller.selectedCategoryId.value
                               : null,
                           hint: const Text("Choose a Category"),
@@ -62,24 +67,22 @@ class AddCourse extends StatelessWidget {
                           onChanged: (newId) async {
                             controller.selectedCategoryId.value = newId!;
                             await controller.getAllSubCategory(newId);
-        
+
                             if (controller.subCategory.isNotEmpty) {
-                              controller.selectSubCategoryId.value = controller.subCategory.first.subCategoryId;
-        
+                              controller.selectSubCategoryId.value =
+                                  controller.subCategory.first.subCategoryId;
                             } else {
                               controller.selectSubCategoryId.value = 0;
-        
                             }
-        
+
                             controller.update();
                           },
                         ),
                       ),
                     ),
-        
+
                     const SizedBox(height: 24),
-        
-                    // Subcategory Section Title
+
                     Text(
                       "Select the SubCategory",
                       style: TextStyle(
@@ -89,7 +92,7 @@ class AddCourse extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-        
+
                     // SubCategory Dropdown
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -102,8 +105,9 @@ class AddCourse extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           isExpanded: true,
                           hint: const Text('Choose a SubCategory'),
-                          value: controller.subCategory.any(
-                                  (sub) => sub.subCategoryId == controller.selectSubCategoryId.value)
+                          value: controller.subCategory.any((sub) =>
+                                  sub.subCategoryId ==
+                                  controller.selectSubCategoryId.value)
                               ? controller.selectSubCategoryId.value
                               : null,
                           items: controller.subCategory.map((sub) {
@@ -119,37 +123,36 @@ class AddCourse extends StatelessWidget {
                         ),
                       ),
                     ),
-        
-                    // if (controller.subCategory.isEmpty)
-                    //   Padding(
-                    //     padding: const EdgeInsets.only(top: 10),
-                    //     child: Text(
-                    //       "No subcategories found for this category.",
-                    //       style: TextStyle(fontSize: 14, color: Colors.redAccent),
-                    //     ),
-                    //   ),
-                    //
-                    // const SizedBox(height: 20),
-                    //
-        
+
                     SizedBox(
                       height: 12,
                     ),
-                    controller.selectedImage.value != null
+                    // IMAGE DISPLAY
+                    (controller.selectedImage.value != null)
                         ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        controller.selectedImage.value!,
-                        height: 200,
-                        width: 200,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                        : const Text("No image selected"),
-        
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              controller.selectedImage.value!,
+                              height: 200,
+                              width: 200,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : (controller.course != null &&
+                                controller.course!.image != null)
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  controller.course!.image.imageUrl!,
+                                  // Assuming this holds full URL
+                                  height: 200,
+                                  width: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : const Text("No image selected"),
+
                     const SizedBox(height: 10),
-        
-                    // Row for button and file name
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -162,47 +165,55 @@ class AddCourse extends StatelessWidget {
                         if (controller.selectedImage.value != null)
                           Expanded(
                             child: Text(
-                              controller.selectedImage.value!.path.split('/').last, // Get file name
+                              controller.selectedImage.value!.path
+                                  .split('/')
+                                  .last,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14, color: Colors.black54),
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.black54),
                             ),
+                          ),
+                        if (controller.selectedImage.value != null)
+                          IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.red),
+                            onPressed: controller.clearImage,
+                            tooltip: "Clear selected image",
                           ),
                       ],
                     ),
-        
+
                     const SizedBox(height: 10),
-        
+
                     if (controller.selectedImage.value != null)
                       TextButton(
                         onPressed: controller.clearImage,
                         child: const Text("Clear Image"),
                       ),
-        
+
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: controller.courseName,
                       validator: (value) {
-                        if(value != null && value.isNotEmpty){
+                        if (value != null && value.isNotEmpty) {
                           return null;
-                        }else{
+                        } else {
                           return "Enter the Course Name";
                         }
                       },
                       decoration: InputDecoration(
-                        hintText: "courseName",
-                        labelText: "courseName",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        )
-                      ),
+                          hintText: "courseName",
+                          labelText: "courseName",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          )),
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: controller.courseDescription,
                       validator: (value) {
-                        if(value != null && value.isNotEmpty){
+                        if (value != null && value.isNotEmpty) {
                           return null;
-                        }else{
+                        } else {
                           return "Enter the CourseDescription";
                         }
                       },
@@ -213,14 +224,12 @@ class AddCourse extends StatelessWidget {
                           labelText: "courseDescription",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                          )
-                      ),
+                          )),
                     ),
-        
+
                     const SizedBox(height: 10),
 
-
-                    Obx(() => Container(
+                    Container(
                       width: double.infinity,
                       child: MaterialButton(
                         height: 40,
@@ -232,8 +241,16 @@ class AddCourse extends StatelessWidget {
                             ? null
                             : () async {
                           if (key.currentState!.validate()) {
-                            await controller.uploadFile();
-                            Get.back();
+                            print("Call IN Ui");
+                            bool result = await controller.ManageCourse();
+                            print("Result " + result.toString());
+
+                            if(result == true){
+                              Navigator.pop(context);
+
+                            }else{
+                              Get.snackbar("Uploading failed", "Try Again");
+                            }
                           } else {
                             print("Error");
                           }
@@ -247,18 +264,15 @@ class AddCourse extends StatelessWidget {
                             strokeWidth: 2,
                           ),
                         )
-                            : Text("Add Course"),
+                            : Text(course != null
+                            ? "Edit Course"
+                            : "Add Course"),
                       ),
-                    ))
-
-
+                    )
                   ],
                 ),
               ),
             );
-        
-        
-        
           },
         ),
       ),
