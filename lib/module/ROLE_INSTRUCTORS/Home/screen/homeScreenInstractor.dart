@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
-
-import '../../AddLession/Screen/AddLessonScreen.dart';
 import '../../CourseManagment/AddCourse/Screen/AddCourse.dart';
-import '../../showAllCourse/screen/ShowAllLession.dart';
+import '../../showAllLession/screen/ShowAllLession.dart';
 import '../controller/homeScreenInstructorController.dart';
 import '../widgets/CourseCard.dart';
 import '../widgets/SubCategoryFilter.dart';

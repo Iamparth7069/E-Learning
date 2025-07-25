@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../AddLession/Screen/AddLessonScreen.dart';
 import '../controller/ShowAllLessionController.dart';
+import 'lesson_detail_screen.dart';
 
 class ShowLession extends StatelessWidget {
   final int courseId;
@@ -85,7 +86,7 @@ class ShowLession extends StatelessWidget {
                   ),
                   trailing: const Icon(Icons.play_circle_fill, color: Colors.blueAccent, size: 32),
                   onTap: () {
-                    // Navigate to detail or play video
+                    Get.to(LessonDetailScreen(lessonId: lesson.lessonId!,));
                   },
                 ),
               );

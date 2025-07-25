@@ -192,7 +192,7 @@ class AddCourseController extends GetxController {
         });
 
       } else {
-        // ⚠️ No image selected → add empty dummy file
+
         final tempDir = await getTemporaryDirectory();
         final dummyPath = '${tempDir.path}/empty.txt';
         final dummyFile = File(dummyPath);
@@ -218,10 +218,8 @@ class AddCourseController extends GetxController {
 
       if (response['statusCode'] == 200) {
         return true;
-
       } else {
         return false;
-
       }
     } catch (e, stack) {
       print("❌ Exception: $e");
