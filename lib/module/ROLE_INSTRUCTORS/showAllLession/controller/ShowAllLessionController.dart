@@ -66,6 +66,7 @@ class ShowAllLessionController extends GetxController{
       print("❌ Exception while loading lessons: $e");
       print("🧵 StackTrace:\n$stackTrace");
     }finally{
+      isLoadding = false;
       update();
     }
   }

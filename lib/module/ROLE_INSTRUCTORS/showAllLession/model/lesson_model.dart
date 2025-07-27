@@ -1,9 +1,9 @@
 class Lesson {
   final int lessonId;
-  final String lessonName;
-  final String lessonContent;
-  final LessonImage image;
-  final LessonVideo video;
+  String lessonName;
+   String lessonContent;
+   LessonImage image;
+   LessonVideo video;
   final int courseId;
 
   Lesson({

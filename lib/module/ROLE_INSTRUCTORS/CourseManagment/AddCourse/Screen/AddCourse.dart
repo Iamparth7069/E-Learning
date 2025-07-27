@@ -240,33 +240,24 @@ class AddCourse extends StatelessWidget {
                         onPressed: controller.uploading.value
                             ? null
                             : () async {
-                          if (key.currentState!.validate()) {
-                            print("Call IN Ui");
-                            bool result = await controller.ManageCourse();
-                            print("Result " + result.toString());
-
-                            if(result == true){
-                              Navigator.pop(context);
-
-                            }else{
-                              Get.snackbar("Uploading failed", "Try Again");
-                            }
-                          } else {
-                            print("Error");
-                          }
-                        },
+                                if (key.currentState!.validate()) {
+                                  print("Call IN Ui");
+                                  await controller.ManageCourse();
+                                } else {
+                                  print("Error");
+                                }
+                              },
                         child: controller.isLoading.value
                             ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                            : Text(course != null
-                            ? "Edit Course"
-                            : "Add Course"),
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                course != null ? "Edit Course" : "Add Course"),
                       ),
                     )
                   ],

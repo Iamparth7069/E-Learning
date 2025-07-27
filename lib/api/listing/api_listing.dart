@@ -211,6 +211,34 @@ class NetworkService {
     }
   }
 
+
+
+  static Future<Map<String,dynamic>> makeDeleteRequest({
+    required String url,
+    Map<String, String>? headers,
+}) async {
+
+    final check = await _checkConnection();
+    if (check['error']) return {'response': check['message'], 'statusCode': 500};
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      headers ??= {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${prefs.getString(SharedPrefHelper.token) ?? ''}',
+      };
+
+      final response = await _dio.delete(url, options: Options(headers: headers));
+
+      return {
+        'response': response.data,
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      return _handleError(e);
+    }
+
+  }
 }
 
 

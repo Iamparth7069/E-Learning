@@ -1,18 +1,24 @@
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../AddLession/Screen/ManageLessionScreen.dart';
 import '../controller/lesson_controller.dart';
 
-class LessonDetailScreen extends StatelessWidget {
+class LessonDetailScreen extends StatefulWidget {
   final int lessonId;
 
   const LessonDetailScreen({super.key, required this.lessonId});
+
+  @override
+  State<LessonDetailScreen> createState() => _LessonDetailScreenState();
+}
+
+class _LessonDetailScreenState extends State<LessonDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final LessonController controller = Get.put(LessonController());
 
-    // Fetch lesson
-    controller.fetchLessonDetail(lessonId);
+    controller.fetchLessonDetail(widget.lessonId);
 
     return Scaffold(
       bottomNavigationBar: Padding(
@@ -21,12 +27,23 @@ class LessonDetailScreen extends StatelessWidget {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Navigate to Edit Screen
-                  print("Edit tapped");
+                onPressed: () async {
+                  final result = await Get.to(() => ManageLessionScreen(
+                    courseId: controller.lesson.value!.courseId,
+                    lesson: controller.lesson.value,
+                  ));
+
+                  if (result != null && result is Map<String, dynamic>) {
+
+                    setState(() {
+                      controller.lesson.value!.lessonName = result['lessonName'].toString();
+                      controller.lesson.value!.lessonContent = result['lessonContent'].toString();
+                    });
+                    // controller.allLessons[index] = updatedLessonFromMap(result);
+                  }
                 },
-                icon: const Icon(Icons.edit,color: Colors.white),
-                label: const Text("Edit",style: TextStyle(color: Colors.white,fontSize: 18),),
+                icon: const Icon(Icons.edit, color: Colors.white),
+                label: const Text("Edit", style: TextStyle(color: Colors.white, fontSize: 18)),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
               ),
             ),
@@ -43,19 +60,19 @@ class LessonDetailScreen extends StatelessWidget {
                     cancelTextColor: Colors.deepPurple,
                     buttonColor: Colors.red,
                     onConfirm: () {
-                      // Call your delete function here
-                      controller.deleteLession(lessonId); // you should implement this in your controller
-                      Get.back(); // Close the dialog
-                      Get.back(); // Go back to previous screen after deletion (optional)
+                      controller.deleteLession(widget.lessonId);
+                      Get.back(); // Close dialog
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        Get.back(result: widget.lessonId); // Go back to previous screen
+                      });
                     },
                     onCancel: () {
-                      // Just close the dialog
+                      Get.back();
                     },
                   );
                 },
-
-                icon: const Icon(Icons.delete,color: Colors.white,size: 18,),
-                label: const Text("Delete",style: TextStyle(color: Colors.white,fontSize: 18),),
+                icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+                label: const Text("Delete", style: TextStyle(color: Colors.white, fontSize: 18)),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               ),
             ),
@@ -93,7 +110,7 @@ class LessonDetailScreen extends StatelessWidget {
                     child: Chewie(controller: controller.chewieController!),
                   );
                 } else {
-                  return SizedBox(
+                  return const SizedBox(
                     height: 220,
                     child: Center(child: CircularProgressIndicator()),
                   );
@@ -117,7 +134,9 @@ class LessonDetailScreen extends StatelessWidget {
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
+
               const SizedBox(height: 16),
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 child: Text("Comments", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),

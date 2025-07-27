@@ -7,11 +7,13 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:shaktihub/routes/app_pages.dart';
 import '../../../../../SharedPrefrance/SharedPrefrance_helper.dart';
 import '../../../../../api/listing/api_listing.dart';
 import '../../../../../api/url/api_url.dart';
 import '../../../../ROLE_ADMIN/Home/model/categoryAllModel.dart';
 import '../../../../ROLE_ADMIN/Home/model/subCategoryModel.dart';
+import '../../../BottomNavBar/Screen/bottomNavBarinInstructor.dart';
 import '../../../Home/Model/CourseModel.dart';
 
 class AddCourseController extends GetxController {
@@ -159,7 +161,7 @@ class AddCourseController extends GetxController {
     update();
   }
 
-  Future<bool> ManageCourse() async {
+  Future<void> ManageCourse() async {
     try {
       uploading.value = true;
       update();
@@ -217,14 +219,27 @@ class AddCourseController extends GetxController {
       );
 
       if (response['statusCode'] == 200) {
-        return true;
+        Get.snackbar("Success", "Lesson saved",
+            backgroundColor: Colors.green,
+            colorText: Colors.white);
+
+        if (response['statusCode'] == 200) {
+          Get.snackbar("Success", "Lesson saved",
+              backgroundColor: Colors.green,
+              colorText: Colors.white);
+
+         Get.offAll(() => BottomNavScreen());
+
+        }
       } else {
-        return false;
+        print("❌ Response Error:");
+        Get.snackbar("Error", "Something went wrong",
+            backgroundColor: Colors.red,
+            colorText: Colors.white);
       }
     } catch (e, stack) {
       print("❌ Exception: $e");
       print("📌 Stacktrace:\n$stack");
-      return false;
     } finally {
       uploading.value = false;
       update();

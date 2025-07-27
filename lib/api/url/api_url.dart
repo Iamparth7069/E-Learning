@@ -24,5 +24,9 @@ class ApiUrl {
   static const getAllLession = '${baseUrl}api/v1/lessons/course/';
   static const getLessionDetails = '${baseUrl}api/v1/lessons/';
   static const getStremeUrl =  '${baseUrl}api/v1/videos/stream/';
+  static const lessionDelete = '${baseUrl}api/v1/lessons/';
 
+  static const getStremeUsingRange = '${baseUrl}api/v1/videos/stream/range/';
+  static const updateLession = '${baseUrl}api/v1/lessons/';
+  static const getUserByCourse = '${baseUrl}api/v1/enrollments/';
 }

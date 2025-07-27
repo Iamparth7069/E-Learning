@@ -73,8 +73,8 @@ class CourseCardManagment extends StatelessWidget {
                       ],
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        Get.to(AddCourse(course: course));
+                      onPressed: () async {
+                        final val = await Get.to(() => AddCourse(course: course,));
                        },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
