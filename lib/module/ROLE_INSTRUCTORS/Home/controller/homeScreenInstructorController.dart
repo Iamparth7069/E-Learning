@@ -45,7 +45,7 @@ class HomeScreenInstructorController extends GetxController {
         'Authorization': 'Bearer $token'
       };
 
-      String url = ApiUrl.getAllCourse;
+      String url = ApiUrl.getAllCourseByInstructor;
       final response = await NetworkService.makeGetRequest(
         url: url,
         headers: headers,
@@ -54,8 +54,9 @@ class HomeScreenInstructorController extends GetxController {
       print("Response is $response");
 
       List<dynamic> dataGet = response["response"];
-      courseList.value =
-          dataGet.map((json) => CourseModel.fromJson(json)).toList();
+      print("data Objecy is " + dataGet.toString());
+
+      courseList.value = dataGet.map((json) => CourseModel.fromJson(json)).toList();
     } catch (e) {
       print("Error is $e");
     }

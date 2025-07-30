@@ -18,7 +18,7 @@ class StudentManagmentController extends GetxController {
 
   Future<void> loadCourse() async {
     try {
-      String url = ApiUrl.getAllCourse;
+      String url = ApiUrl.getAllCourseByInstructor;
       String? token = SharedPrefHelper().getString(SharedPrefHelper.token);
 
       print("🔑 Token value: $token");

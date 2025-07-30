@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:shaktihub/Constraint/app_color.dart';
 import 'package:get/get.dart';
 import 'package:shaktihub/Constraint/extension.dart';
@@ -153,11 +154,11 @@ class RegisterScreen extends StatelessWidget {
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: MaterialButton(
+                          child: controller.isLoading.value ? LoadingAnimationWidget.hexagonDots(
+                              color: AppColor.loadingColor, size: 5.h) :  MaterialButton(
                             color: AppColor.ButtonColor,
                             onPressed: () {
                               controller.register();
-                               // Get.toNamed(Routes.LOGIN);
                             },
                             height: 26,
                             padding: EdgeInsets.all(10),

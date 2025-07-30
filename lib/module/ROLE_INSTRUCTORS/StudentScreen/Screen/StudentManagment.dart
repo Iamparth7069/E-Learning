@@ -67,7 +67,7 @@ class StudentManagment extends StatelessWidget {
                   );
                 },
               ),
-              )
+              ),
 
             ],
           ),

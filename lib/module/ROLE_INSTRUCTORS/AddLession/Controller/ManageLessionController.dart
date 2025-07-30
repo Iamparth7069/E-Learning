@@ -23,14 +23,17 @@ class ManageLessionController extends GetxController {
   String? imageUrl;  // 👈 existing image URL
   String? videoUrl;  // 👈 existing video URL
   bool isLoading = false;
+  int? lessionId;
 
   final int courseId;
-  final Lesson? lession; // 👈
+  final Lesson? lession;
 
   SharedPrefHelper sh1 = SharedPrefHelper();
 
   ManageLessionController({required this.courseId, this.lession}) {
     if (lession != null) {
+      lessionId = lession!.lessonId;
+
       lessonName = lession!.lessonName ?? '';
       lessonContent = lession!.lessonContent ?? '';
       isEnabled =  true;
@@ -83,59 +86,107 @@ class ManageLessionController extends GetxController {
     isLoading = true;
     update();
 
-    final token = sh1.getString(SharedPrefHelper.token);
-    final isEditing = lession != null;
+    try {
+      final token = sh1.getString(SharedPrefHelper.token);
+      final isEditing = lession != null;
 
-    String url = isEditing
-        ? "${ApiUrl.updateLession}${lession!.lessonId}"
-        : ApiUrl.addLession;
+      String url = isEditing
+          ? "${ApiUrl.updateLession}$lessionId"
+          : ApiUrl.addLession;
 
-    print("Url is " + url);
+      print("➡️ URL: $url");
 
+      Map<String, dynamic> bodyData = {
+        'lessonName': lessonName,
+        'lessonContent': lessonContent,
+        'courseId': courseId,
+      };
 
-    Map<String, dynamic> bodyData = {
-      'lessonId': lession!.lessonId,
-      'lessonName': lessonName,
-      'lessonContent':lessonContent,
-      'courseId': courseId,
-    };
-    if(pickedImage != null){
-      bodyData['imagePath'] = pickedImage!.path;
-    }
-    if(pickedVideo != null){
-      bodyData['videoPath'] = pickedVideo!.path;
-    }
-    final response = await NetworkService.makeMultipartPutRequest(
-      url: url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token'},
-      fields: {'lessonDto': jsonEncode(bodyData)},
-      files: [
-        if (pickedImage != null)
-          {'name': 'imageFile', 'filePath': pickedImage!.path},
-        if (pickedVideo != null)
-          {'name': 'videoFile', 'filePath': pickedVideo!.path},
-      ],
-    );
+      if (isEditing) {
+        bodyData['lessonId'] = lessionId!;
+      }
 
-    isLoading = false;
-    update();
+      if (pickedImage != null) {
+        bodyData['image'] = pickedImage!.path;
+      }
 
-    print("Response Is " + response['statusCode'].toString());
+      if (pickedVideo != null) {
+        bodyData['video'] = pickedVideo!.path;
+      }
 
-    if (response['statusCode'] == 200) {
-      Get.snackbar("Success", "Lesson saved",
+      print("📦 Final Body: $bodyData");
+
+      dynamic response;
+
+      if (isEditing) {
+        response = await NetworkService.makeMultipartPutRequest(
+          url: url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          fields: {'lesson': jsonEncode(bodyData)},
+          files: [
+            if (pickedImage != null)
+              {'name': 'image', 'filePath': pickedImage!.path},
+            if (pickedVideo != null)
+              {'name': 'video', 'filePath': pickedVideo!.path},
+          ],
+        );
+      } else {
+        response = await NetworkService.makeMultipartPostRequest(
+          url: url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          fields: {'lesson': jsonEncode(bodyData)},
+          files: [
+            if (pickedImage != null)
+              {'name': 'image', 'filePath': pickedImage!.path},
+            if (pickedVideo != null)
+              {'name': 'video', 'filePath': pickedVideo!.path},
+          ],
+        );
+      }
+
+      print("✅ Response Status Code: ${response['statusCode']}");
+
+      if (response['statusCode'] == 200) {
+        Get.snackbar(
+          "Success",
+          "Lesson saved successfully!",
           backgroundColor: Colors.green,
-          colorText: Colors.white);
+          colorText: Colors.white,
+        );
 
-      Future.delayed(Duration(milliseconds: 800), () {
-        Get.back(result: bodyData);
+        Future.delayed(const Duration(milliseconds: 800), () {
+          Get.back(result: bodyData);
+        });
 
-      });
-      return true;
-    } else {
+        return true;
+      } else {
+        Get.snackbar(
+          "Error",
+          "Failed to save lesson",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } catch (e) {
+      print("❌ Exception occurred: $e");
+      Get.snackbar(
+        "Exception",
+        "Something went wrong: $e",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
+    } finally {
+      isLoading = false;
+      update();
     }
   }
+
 }

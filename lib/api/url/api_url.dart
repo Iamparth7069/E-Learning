@@ -1,5 +1,7 @@
 class ApiUrl {
-  static const baseUrl = 'https://foal-true-supposedly.ngrok-free.app/';
+  // static const baseUrl = 'https://foal-true-supposedly.ngrok-free.app/';
+
+  static const baseUrl = 'http://192.168.129.42:8080/';
   static const loginApi = '${baseUrl}api/v1/auth/login';
   static const registerApi = '${baseUrl}api/v1/auth/register';
 
@@ -15,7 +17,7 @@ class ApiUrl {
   static const updateCategory = '${baseUrl}api/v1/categories/';
   static const updateSubCategory = '${baseUrl}api/v1/subcategories/';
   static const getAllSubCategoryById = '${baseUrl}api/v1/subcategories/category/';
-  static const getAllCourse = '${baseUrl}api/v1/courses/instructor/my-courses';
+  static const getAllCourseByInstructor = '${baseUrl}api/v1/courses/instructor/my-courses';
   static const AddCourse = '${baseUrl}api/v1/courses/';
   static const CourseEnableApi = '${baseUrl}api/v1/courses/';
 
@@ -29,4 +31,6 @@ class ApiUrl {
   static const getStremeUsingRange = '${baseUrl}api/v1/videos/stream/range/';
   static const updateLession = '${baseUrl}api/v1/lessons/';
   static const getUserByCourse = '${baseUrl}api/v1/enrollments/';
+  static const getAllCourse =  '${baseUrl}api/v1/courses/all';
+  static const getAllPopularCourse =  '${baseUrl}api/v1/courses/popular';
 }
