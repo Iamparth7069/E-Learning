@@ -1,18 +1,22 @@
 class Lesson {
   final int lessonId;
   String lessonName;
-   String lessonContent;
-   LessonImage image;
-   LessonVideo video;
+  String lessonContent;
+  final int? sequenceNumber;
+  LessonImage image;
+  LessonVideo video;
   final int courseId;
+  final List<dynamic>? comments;
 
   Lesson({
     required this.lessonId,
     required this.lessonName,
     required this.lessonContent,
+    this.sequenceNumber,
     required this.image,
     required this.video,
     required this.courseId,
+    this.comments,
   });
 
   factory Lesson.fromJson(Map<String, dynamic> json) {
@@ -20,9 +24,11 @@ class Lesson {
       lessonId: json['lessonId'],
       lessonName: json['lessonName'],
       lessonContent: json['lessonContent'],
+      sequenceNumber: json['sequenceNumber'],
       image: LessonImage.fromJson(json['image']),
       video: LessonVideo.fromJson(json['video']),
       courseId: json['courseId'],
+      comments: json['comments'] as List<dynamic>?,
     );
   }
 }

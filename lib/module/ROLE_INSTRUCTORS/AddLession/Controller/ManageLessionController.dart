@@ -23,6 +23,10 @@ class ManageLessionController extends GetxController {
   String? imageUrl;  // 👈 existing image URL
   String? videoUrl;  // 👈 existing video URL
   bool isLoading = false;
+  bool isVideoProcessing = false;
+  bool isImageProcessing = false;
+  double videoCompressionProgress = 0.0;
+  String videoProcessingStatus = '';
   int? lessionId;
 
   final int courseId;
@@ -58,26 +62,151 @@ class ManageLessionController extends GetxController {
   }
 
   Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      pickedImage = File(picked.path);
-      imageUrl = null;
+    try {
+      isImageProcessing = true;
+      update();
+      
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      
+      if (picked != null) {
+        pickedImage = File(picked.path);
+        imageUrl = null;
+        
+        Get.snackbar(
+          "Success",
+          "Image selected successfully",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      print("❌ Error picking image: $e");
+      Get.snackbar(
+        "Error",
+        "Failed to pick image: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isImageProcessing = false;
       update();
     }
   }
 
   Future<void> pickVideo() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.video);
-    if (result != null && result.files.single.path != null) {
-      final info = await VideoCompress.compressVideo(
-        result.files.single.path!,
-        quality: VideoQuality.MediumQuality,
-        deleteOrigin: false,
-      );
+      try {
+      isVideoProcessing = true;
+      videoCompressionProgress = 0.0;
+      videoProcessingStatus = 'Selecting video...';
+      update();
 
-      pickedVideo = info?.file;
-      videoUrl = null;
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['mp4', 'avi', 'mov', 'mkv'],
+      );
+      
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final fileSizeInMB = await file.length() / (1024 * 1024);
+        
+        print("📹 Selected video size: ${fileSizeInMB.toStringAsFixed(2)} MB");
+        
+        // Show file size warning if too large
+        if (fileSizeInMB > 100) {
+          final shouldContinue = await Get.dialog<bool>(
+            AlertDialog(
+              title: Text('Large Video File'),
+              content: Text(
+                'The selected video is ${fileSizeInMB.toStringAsFixed(1)} MB. '
+                'This may take longer to process and upload. Continue?'
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Get.back(result: false),
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Get.back(result: true),
+                  child: Text('Continue'),
+                ),
+              ],
+            ),
+          ) ?? false;
+          
+          if (!shouldContinue) {
+            isVideoProcessing = false;
+            update();
+            return;
+          }
+        }
+
+        videoProcessingStatus = 'Compressing video...';
+        update();
+
+        // Set up compression progress listener
+        VideoCompress.setLogLevel(0);
+        
+        final subscription = VideoCompress.compressProgress$.subscribe((progress) {
+          videoCompressionProgress = progress / 100.0;
+          videoProcessingStatus = 'Compressing... ${progress.toStringAsFixed(0)}%';
+          update();
+        });
+
+        try {
+          final info = await VideoCompress.compressVideo(
+            result.files.single.path!,
+            quality: VideoQuality.MediumQuality,
+            deleteOrigin: false,
+            includeAudio: true,
+          );
+
+          subscription.unsubscribe();
+
+          if (info != null && info.file != null) {
+            pickedVideo = info.file;
+            videoUrl = null;
+            
+            final compressedSizeInMB = await info.file!.length() / (1024 * 1024);
+            print("📹 Compressed video size: ${compressedSizeInMB.toStringAsFixed(2)} MB");
+            
+            videoProcessingStatus = 'Video ready!';
+            
+            Get.snackbar(
+              "Success",
+              "Video compressed successfully! "
+              "Size reduced from ${fileSizeInMB.toStringAsFixed(1)} MB to ${compressedSizeInMB.toStringAsFixed(1)} MB",
+              backgroundColor: Colors.green,
+              colorText: Colors.white,
+              duration: Duration(seconds: 3),
+            );
+          } else {
+            throw Exception("Video compression failed");
+          }
+        } catch (e) {
+          subscription.unsubscribe();
+          throw e;
+        }
+      }
+    } catch (e) {
+      print("❌ Error processing video: $e");
+      Get.snackbar(
+        "Error",
+        "Failed to process video: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: Duration(seconds: 4),
+      );
+    } finally {
+      isVideoProcessing = false;
+      videoCompressionProgress = 0.0;
+      videoProcessingStatus = '';
       update();
     }
   }
@@ -96,25 +225,41 @@ class ManageLessionController extends GetxController {
 
       print("➡️ URL: $url");
 
-      Map<String, dynamic> bodyData = {
+      // Prepare lesson JSON data (without file paths)
+      Map<String, dynamic> lessonData = {
         'lessonName': lessonName,
         'lessonContent': lessonContent,
         'courseId': courseId,
       };
 
       if (isEditing) {
-        bodyData['lessonId'] = lessionId!;
+        lessonData['lessonId'] = lessionId!;
       }
 
+      print("📦 Lesson Data: $lessonData");
+
+      // Prepare files list
+      List<Map<String, dynamic>> files = [];
+      
+      // Add image file if selected
       if (pickedImage != null) {
-        bodyData['image'] = pickedImage!.path;
+        files.add({
+          'name': 'image',
+          'filePath': pickedImage!.path,
+        });
+        print("📷 Image file added: ${pickedImage!.path}");
       }
-
+      
+      // Add video file if selected
       if (pickedVideo != null) {
-        bodyData['video'] = pickedVideo!.path;
+        files.add({
+          'name': 'video', 
+          'filePath': pickedVideo!.path,
+        });
+        print("🎥 Video file added: ${pickedVideo!.path}");
       }
 
-      print("📦 Final Body: $bodyData");
+      print("📁 Total files to upload: ${files.length}");
 
       dynamic response;
 
@@ -122,31 +267,25 @@ class ManageLessionController extends GetxController {
         response = await NetworkService.makeMultipartPutRequest(
           url: url,
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
+            // Don't set Content-Type for multipart requests
           },
-          fields: {'lesson': jsonEncode(bodyData)},
-          files: [
-            if (pickedImage != null)
-              {'name': 'image', 'filePath': pickedImage!.path},
-            if (pickedVideo != null)
-              {'name': 'video', 'filePath': pickedVideo!.path},
-          ],
+          fields: {
+            'lesson': jsonEncode(lessonData), // JSON string in lesson field
+          },
+          files: files,
         );
       } else {
         response = await NetworkService.makeMultipartPostRequest(
           url: url,
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
+            // Don't set Content-Type for multipart requests
           },
-          fields: {'lesson': jsonEncode(bodyData)},
-          files: [
-            if (pickedImage != null)
-              {'name': 'image', 'filePath': pickedImage!.path},
-            if (pickedVideo != null)
-              {'name': 'video', 'filePath': pickedVideo!.path},
-          ],
+          fields: {
+            'lesson': jsonEncode(lessonData), // JSON string in lesson field
+          },
+          files: files,
         );
       }
 
@@ -161,7 +300,7 @@ class ManageLessionController extends GetxController {
         );
 
         Future.delayed(const Duration(milliseconds: 800), () {
-          Get.back(result: bodyData);
+          Get.back();
         });
 
         return true;

@@ -1,7 +1,7 @@
 class ApiUrl {
   // static const baseUrl = 'https://foal-true-supposedly.ngrok-free.app/';
 
-  static const baseUrl = 'http://192.168.129.42:8080/';
+  static const baseUrl = 'http://10.154.59.58:8080/';
   static const loginApi = '${baseUrl}api/v1/auth/login';
   static const registerApi = '${baseUrl}api/v1/auth/register';
 
@@ -21,7 +21,7 @@ class ApiUrl {
   static const AddCourse = '${baseUrl}api/v1/courses/';
   static const CourseEnableApi = '${baseUrl}api/v1/courses/';
 
-  static const addLession = '${baseUrl}api/v1/lessons/';
+  static const addLession = '${baseUrl}api/v1/lessons/async';
 
   static const getAllLession = '${baseUrl}api/v1/lessons/course/';
   static const getLessionDetails = '${baseUrl}api/v1/lessons/';

@@ -15,37 +15,103 @@ class CategoryManagmentAdmin extends StatelessWidget {
       body: GetBuilder<CourseManagment>(
         init: CourseManagment(),
         builder: (controller) {
+          // Show loading indicator
+          if (controller.isLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading courses...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Show empty state
+          if (controller.isEmpty || controller.getAllCouceData.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.school_outlined,
+                    size: 80,
+                    color: Colors.grey[400],
+                  ),
+                  SizedBox(height: 24),
+                  Text(
+                    'No Courses Available',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'There are no courses in the database yet.\nAdd some courses to get started!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      height: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      controller.GetCourseDetails();
+                    },
+                    icon: Icon(Icons.refresh),
+                    label: Text('Refresh'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Show courses when data is available
           return Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  height: 10,
+                SizedBox(height: 10),
+                Text(
+                  'Popular Courses',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
                 ),
-                Text('Popular Courses',style: TextStyle(fontSize: 20,fontWeight: FontWeight.w500),),
-                // Horizontal row for the first few courses
-                SizedBox(
-                  height: 10,
-                ),
+                SizedBox(height: 10),
                 SizedBox(
                   height: 270,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: controller.getAllCouceData.length, // First 3 horizontally
+                    itemCount: controller.getAllCouceData.length,
                     itemBuilder: (context, index) {
-                      return CourseCard( controller.getAllCouceData[index]);
+                      return CourseCard(controller.getAllCouceData[index]);
                     },
                   ),
                 ),
                 SizedBox(height: 16),
-                Text('All Courses',style: TextStyle(fontSize: 20,fontWeight: FontWeight.w500),),
+                Text(
+                  'All Courses',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                ),
                 SizedBox(height: 16),
-
                 // Vertical list for the rest
                 Expanded(
                   child: GridView.builder(
-
                     itemCount: controller.getAllCouceData.length,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2, // 2 columns

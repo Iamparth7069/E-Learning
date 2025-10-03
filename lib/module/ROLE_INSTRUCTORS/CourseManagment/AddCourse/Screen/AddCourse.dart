@@ -241,13 +241,30 @@ class AddCourse extends StatelessWidget {
                             ? null
                             : () async {
                                 if (key.currentState!.validate()) {
-                                  print("Call IN Ui");
+                                  // Additional validation
+                                  if (controller.selectedCategoryId.value == 0) {
+                                    Get.snackbar("Error", "Please select a category",
+                                        backgroundColor: Colors.red, colorText: Colors.white);
+                                    return;
+                                  }
+                                  if (controller.selectSubCategoryId.value == 0) {
+                                    Get.snackbar("Error", "Please select a subcategory",
+                                        backgroundColor: Colors.red, colorText: Colors.white);
+                                    return;
+                                  }
+                                  if (controller.course == null && controller.selectedImage.value == null) {
+                                    Get.snackbar("Error", "Please select an image",
+                                        backgroundColor: Colors.red, colorText: Colors.white);
+                                    return;
+                                  }
+                                  
+                                  print("✅ Validation passed, calling ManageCourse");
                                   await controller.ManageCourse();
                                 } else {
-                                  print("Error");
+                                  print("❌ Form validation failed");
                                 }
                               },
-                        child: controller.isLoading.value
+                        child: controller.uploading.value
                             ? SizedBox(
                                 width: 24,
                                 height: 24,

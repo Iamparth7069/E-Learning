@@ -11,7 +11,6 @@ import 'SharedPrefrance/SharedPrefrance_helper.dart';
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await SharedPrefHelper.init();
-  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 

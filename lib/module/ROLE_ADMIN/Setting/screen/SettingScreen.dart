@@ -40,20 +40,25 @@ class _SettingScreenState extends State<SettingScreen> {
                     style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                   ),
                 ),
-                ListTile(
-                  title: Text(
-                    "Admin",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 25,
-                    ),
-                  ),
-                  leading: SizedBox(
-                    height: 60,
-                    width: 60,
-                    child: ClipOval(child: Image.asset("assets/images/profile.png")),
-                  ),
-                  subtitle: Text("admin@exmple.com"),
+                GetBuilder<SettingsControllers>(
+                  builder: (controller) {
+                    final userInfo = controller.getCurrentUserInfo();
+                    return ListTile(
+                      title: Text(
+                        userInfo['name'],
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 25,
+                        ),
+                      ),
+                      leading: SizedBox(
+                        height: 60,
+                        width: 60,
+                        child: ClipOval(child: Image.asset("assets/images/profile.png")),
+                      ),
+                      subtitle: Text(userInfo['email']),
+                    );
+                  },
                 ),
                 0.2.h.addHSpace(),
                 Divider(
@@ -222,30 +227,52 @@ class _SettingScreenState extends State<SettingScreen> {
                 Divider(
                   height: 40,
                 ),
-                ListTile(
-                  onTap: () async {
-                    await _controllers.signOut();
+                GetBuilder<SettingsControllers>(
+                  builder: (controller) {
+                    return ListTile(
+                      onTap: controller.isLoggingOut.value 
+                        ? null 
+                        : () async {
+                            await controller.showLogoutConfirmation();
+                          },
+                      leading: Container(
+                        padding: EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: controller.isLoggingOut.value 
+                            ? Colors.grey 
+                            : Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: controller.isLoggingOut.value
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Icon(
+                              Icons.logout,
+                              color: Colors.white,
+                              size: 35,
+                            ),
+                      ),
+                      title: Text(
+                        controller.isLoggingOut.value ? "Logging Out..." : "Log Out",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 20,
+                          color: controller.isLoggingOut.value 
+                            ? Colors.grey 
+                            : Colors.black,
+                        ),
+                      ),
+                      trailing: controller.isLoggingOut.value 
+                        ? null 
+                        : Icon(Icons.arrow_forward_ios_rounded),
+                    );
                   },
-                  leading: Container(
-                    padding: EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.logout,
-                      color: Colors.redAccent.shade100,
-                      size: 35,
-                    ),
-                  ),
-                  title: Text(
-                    "Log Out",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 20,
-                    ),
-                  ),
-                  trailing: Icon(Icons.arrow_forward_ios_rounded),
                 ),
               ],
             ),
@@ -273,3 +300,4 @@ class _SettingScreenState extends State<SettingScreen> {
 //   AppSettings.openAppSettings();
 // }
 }
+

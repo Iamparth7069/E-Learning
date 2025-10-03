@@ -15,7 +15,6 @@ import '../../ROLE_INSTRUCTORS/Home/screen/homeScreenInstractor.dart';
 class LoginController extends GetxController {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   RxBool isLoading = false.obs;
   final GoogleSignIn googleSignIn = GoogleSignIn();
   final key = GlobalKey<FormState>();
@@ -42,9 +41,6 @@ class LoginController extends GetxController {
         'email': emailController.text.trim(),
         'password': passwordController.text.trim()
       };
-
-      print("Request URL: ${ApiUrl.loginApi}");
-      print("Request Body: $body");
 
       try {
         Map<String, dynamic> response = await NetworkService.makePostRequest(
