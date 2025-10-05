@@ -87,8 +87,18 @@ class ShowLession extends StatelessWidget {
                     onTap: () async {
                       final deletedLessonId = await Get.to(() => LessonDetailScreen(lessonId: lesson.lessonId!));
                       if (deletedLessonId != null) {
+                        // Remove the deleted lesson from the list
                         controller.allLessons.removeWhere((l) => l.lessonId == deletedLessonId);
                         controller.update();
+                        
+                        // Show success message
+                        Get.snackbar(
+                          "Success",
+                          "Lesson has been removed from the list",
+                          backgroundColor: Colors.green,
+                          colorText: Colors.white,
+                          duration: Duration(seconds: 2),
+                        );
                       }
                     },
                   ),

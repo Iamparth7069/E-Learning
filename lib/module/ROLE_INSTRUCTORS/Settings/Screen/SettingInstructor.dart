@@ -6,20 +6,6 @@ import '../Controller/SettingsControllerInstructor.dart';
 class SettingScreen extends StatelessWidget {
   const SettingScreen({super.key});
 
-  void _logout() {
-    Get.defaultDialog(
-      title: "Logout",
-      middleText: "Are you sure you want to logout?",
-      textConfirm: "Yes",
-      textCancel: "No",
-      confirmTextColor: Colors.white,
-      onConfirm: () {
-        // Perform logout logic here
-        Get.back(); // Close dialog
-        Get.snackbar("Logout", "Successfully logged out");
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,11 +87,25 @@ class SettingScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const Divider(),
 
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text("Logout", style: TextStyle(color: Colors.red)),
-                onTap: _logout,
-              ),
+              Obx(() => ListTile(
+                leading: controller.isLoggingOut.value
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                        ),
+                      )
+                    : const Icon(Icons.logout, color: Colors.red),
+                title: Text(
+                  controller.isLoggingOut.value ? "Logging out..." : "Logout",
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: controller.isLoggingOut.value ? null : () {
+                  controller.showLogoutConfirmation();
+                },
+              )),
             ],
           ),
         );

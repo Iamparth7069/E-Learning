@@ -40,6 +40,66 @@ class NetworkService {
     }
   }
 
+  static Future<Map<String, dynamic>> makeRangeRequest({
+    required String url,
+    required String range,
+    Map<String, String>? headers,
+  }) async {
+    final check = await _checkConnection();
+    if (check['error']) return {'response': check['message'], 'statusCode': 500};
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      headers ??= {
+        'Authorization': 'Bearer ${prefs.getString(SharedPrefHelper.token) ?? ''}',
+      };
+      
+      // Add range header
+      headers['Range'] = range;
+
+      final response = await _dio.get(
+        url, 
+        options: Options(
+          headers: headers,
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      return {
+        'response': response.data,
+        'statusCode': response.statusCode,
+        'headers': response.headers.map,
+      };
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  static Future<Map<String, dynamic>> makeHeadRequest({
+    required String url,
+    Map<String, String>? headers,
+  }) async {
+    final check = await _checkConnection();
+    if (check['error']) return {'response': check['message'], 'statusCode': 500};
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      headers ??= {
+        'Authorization': 'Bearer ${prefs.getString(SharedPrefHelper.token) ?? ''}',
+      };
+
+      final response = await _dio.head(url, options: Options(headers: headers));
+
+      return {
+        'response': response.data,
+        'statusCode': response.statusCode,
+        'headers': response.headers.map,
+      };
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
   static Future<Map<String, dynamic>> makePostRequest({
     required String url,
     Map<String, String>? headers,

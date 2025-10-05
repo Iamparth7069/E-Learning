@@ -1,8 +1,8 @@
-import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../AddLession/Screen/ManageLessionScreen.dart';
 import '../controller/lesson_controller.dart';
+import '../widgets/range_video_player.dart';
 
 class LessonDetailScreen extends StatefulWidget {
   final int lessonId;
@@ -196,83 +196,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   }
 
   Widget _buildVideoPlayer() {
-    return Container(
-      color: Colors.black,
-      child: Obx(() {
-        if (controller.isVideoLoading.value) {
-          return SizedBox(
-            height: 220,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Colors.white),
-                  SizedBox(height: 16),
-                  Text(
-                    "Loading video...",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        if (controller.videoError.value.isNotEmpty) {
-          return Container(
-            height: 220,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error, color: Colors.red, size: 60),
-                  SizedBox(height: 16),
-                  Text(
-                    "Video Error",
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    controller.videoError.value,
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => controller.refreshLesson(),
-                    child: Text("Retry"),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        if (controller.isVideoReady.value && controller.chewieController != null) {
-          return SizedBox(
-            width: double.infinity,
-            height: 220,
-            child: Chewie(controller: controller.chewieController!),
-          );
-        }
-
-        return SizedBox(
-          height: 220,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.video_library, color: Colors.grey, size: 60),
-                SizedBox(height: 16),
-                Text(
-                  "No video available",
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        );
-      }),
+    return RangeVideoPlayer(
+      controller: controller,
+      height: 220,
     );
   }
 
@@ -453,9 +379,20 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             Text("Delete Lesson"),
           ],
         ),
-        content: Text(
-          "Are you sure you want to delete this lesson? This action cannot be undone.",
-          style: TextStyle(fontSize: 16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Are you sure you want to delete this lesson?",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "This action cannot be undone and will permanently remove the lesson and all its content.",
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -465,18 +402,60 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           ElevatedButton(
             onPressed: () async {
               Get.back(); // Close dialog
-              await controller.deleteLession(widget.lessonId);
-              if (!controller.isDeleting.value) {
-                Future.delayed(Duration(milliseconds: 500), () {
-                  Get.back(result: widget.lessonId);
-                });
-              }
+              await _handleLessonDeletion();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text("Delete", style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text("Delete"),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleLessonDeletion() async {
+    try {
+      // Show loading indicator
+      Get.dialog(
+        AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text("Deleting lesson..."),
+            ],
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Attempt to delete the lesson
+      bool success = await controller.deleteLession(widget.lessonId);
+      
+      // Close loading dialog
+      Get.back();
+      
+      if (success) {
+        // Navigate back with the deleted lesson ID to trigger refresh
+        Get.back(result: widget.lessonId);
+      }
+      // If deletion failed, the error message is already shown by the controller
+      
+    } catch (e) {
+      // Close loading dialog if it's still open
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+      
+      Get.snackbar(
+        "Error",
+        "An unexpected error occurred while deleting the lesson",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 }

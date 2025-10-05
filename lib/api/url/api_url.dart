@@ -1,7 +1,7 @@
 class ApiUrl {
   // static const baseUrl = 'https://foal-true-supposedly.ngrok-free.app/';
 
-  static const baseUrl = 'http://10.154.59.58:8080/';
+  static const baseUrl = 'https://knapsacked-flor-hilariously.ngrok-free.dev/';
   static const loginApi = '${baseUrl}api/v1/auth/login';
   static const registerApi = '${baseUrl}api/v1/auth/register';
 

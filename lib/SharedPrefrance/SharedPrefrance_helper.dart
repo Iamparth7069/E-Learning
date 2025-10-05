@@ -74,4 +74,35 @@ class SharedPrefHelper {
     await _preferences?.clear();
   }
 
+  /// Clear only authentication-related data
+  Future<void> clearAuthenticationData() async {
+    try {
+      await remove(token);
+      await remove(userEmail);
+      await remove(userPassword);
+      await remove(userName);
+      await remove(loginStatus);
+      await remove(instructorLoginStatus);
+      await remove(IsAdmin);
+    } catch (e) {
+      print("❌ Error clearing authentication data: $e");
+      // Fallback to clearing all preferences
+      await clear();
+    }
+  }
+
+  /// Check if user is logged in
+  bool isLoggedIn() {
+    final tokenValue = getString(token);
+    final loginStatusValue = getBool(loginStatus);
+    return tokenValue != null && tokenValue.isNotEmpty && loginStatusValue;
+  }
+
+  /// Check if instructor is logged in
+  bool isInstructorLoggedIn() {
+    final tokenValue = getString(token);
+    final instructorStatus = getBool(instructorLoginStatus);
+    return tokenValue != null && tokenValue.isNotEmpty && instructorStatus;
+  }
+
 }
