@@ -1,14 +1,20 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shaktihub/module/ROLE_INSTRUCTORS/StudentScreen/Model/StudentModel.dart';
-import '../../../ROLE_ADMIN/Cource Managment/Model/CourceModel.dart';
+import 'package:shaktihub/module/ROLE_INSTRUCTORS/StudentScreen/Model/EnrollmentModel.dart';
+import 'package:shaktihub/module/ROLE_INSTRUCTORS/StudentScreen/Model/UserModel.dart';
 import '../../../../api/listing/api_listing.dart';
 import '../../../../SharedPrefrance/SharedPrefrance_helper.dart';
 import '../../../../api/url/api_url.dart';
 
 class StudentManagmentController extends GetxController {
   RxList<StudentModel> getAllCouceData = <StudentModel>[].obs;
+  RxList<EnrollmentModel> enrollments = <EnrollmentModel>[].obs;
+  RxList<UserModel> students = <UserModel>[].obs;
   RxInt selectedCourseId = 0.obs;
   RxBool isLoading = false.obs;
+  RxBool isLoadingStudents = false.obs;
+  RxString errorMessage = ''.obs;
 
   @override
   void onInit() {
@@ -56,37 +62,108 @@ class StudentManagmentController extends GetxController {
     }
   }
 
-  Future<void> getUser(int value) async {
-    String? token = SharedPrefHelper().getString(SharedPrefHelper.token);
+  Future<void> getUser(int courseId) async {
+    try {
+      isLoadingStudents.value = true;
+      errorMessage.value = '';
+      
+      String? token = SharedPrefHelper().getString(SharedPrefHelper.token);
+      
+      if (token == null || token.isEmpty) {
+        throw Exception("Authentication token is missing. Please login again.");
+      }
 
-    print("Course Id " + value.toString());
+      print("🎓 Fetching students for course ID: $courseId");
 
-    if (token == null) {
-      throw Exception("Token is null! Check SharedPreferences.");
+      // First, get enrollments for the course
+      await _fetchEnrollments(courseId, token);
+      
+      // Then, fetch user details for each enrollment
+      await _fetchUserDetails(token);
+      
+    } catch (e) {
+      print("❌ Error fetching students: $e");
+      errorMessage.value = e.toString();
+      Get.snackbar(
+        "Error",
+        "Failed to load students: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoadingStudents.value = false;
     }
+  }
 
-    Map<String, String> headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-    try{
-      isLoading.value = true;
-
-      String url = ApiUrl.getUserByCourse;
-      final response = await NetworkService.makeGetRequest(url: url,
-      headers: headers,
+  Future<void> _fetchEnrollments(int courseId, String token) async {
+    try {
+      String url = "${ApiUrl.getUserByCourse}$courseId";
+      
+      final response = await NetworkService.makeGetRequest(
+        url: url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
       );
 
-      if(response["statusCode"] == 200){
-        isLoading.value = false;
+      print("📥 Enrollments Response: ${response['statusCode']}");
 
+      if (response["statusCode"] == 200) {
+        List<dynamic> enrollmentList = response["response"];
+        enrollments.value = enrollmentList
+            .map((data) => EnrollmentModel.fromJson(data))
+            .toList();
+        
+        print("✅ Found ${enrollments.length} enrollments");
+      } else {
+        throw Exception("Failed to fetch enrollments: ${response['response']}");
       }
-    }catch(e) {
-      print("Error is ${e.toString()}");
-      isLoading.value = false;
-    }finally{
-      isLoading.value = false;
+    } catch (e) {
+      print("❌ Error fetching enrollments: $e");
+      rethrow;
     }
+  }
+
+  Future<void> _fetchUserDetails(String token) async {
+    try {
+      students.clear();
+      
+      for (EnrollmentModel enrollment in enrollments) {
+        try {
+          String url = "${ApiUrl.getUserById}${enrollment.userId}";
+          
+          final response = await NetworkService.makeGetRequest(
+            url: url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          );
+
+          if (response["statusCode"] == 200) {
+            UserModel user = UserModel.fromJson(response["response"]);
+            students.add(user);
+            print("✅ Loaded user: ${user.fullName}");
+          } else {
+            print("⚠️ Failed to load user ${enrollment.userId}: ${response['response']}");
+          }
+        } catch (e) {
+          print("❌ Error loading user ${enrollment.userId}: $e");
+        }
+      }
+      
+      print("✅ Successfully loaded ${students.length} students");
+    } catch (e) {
+      print("❌ Error fetching user details: $e");
+      rethrow;
+    }
+  }
+
+  void clearStudents() {
+    students.clear();
+    enrollments.clear();
+    errorMessage.value = '';
   }
 
 }

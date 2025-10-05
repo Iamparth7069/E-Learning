@@ -29,8 +29,14 @@ class ApiUrl {
 
   static const getStremeUsingRange = '${baseUrl}api/v1/videos/stream/range/';
   static const updateLession = '${baseUrl}api/v1/lessons/';
-  static const getUserByCourse = '${baseUrl}api/v1/enrollments';
+  static const getUserByCourse = '${baseUrl}api/v1/enrollments/';
+  static const enrollInCourse = '${baseUrl}api/v1/enrollments';
+  static const getMyEnrollments = '${baseUrl}api/v1/enrollments/my-enrollment';
+  static const getUserById = '${baseUrl}api/v1/users/';
   static const getAllCourse =  '${baseUrl}api/v1/courses/all';
+  static const getCourseById = '${baseUrl}api/v1/courses/';
+  static const getLessonsByCourseId = '${baseUrl}api/v1/courses/';
+  static const getLessonsByCourseIdAlternative = '${baseUrl}api/v1/lessons/course/';
   static const getAllPopularCourse =  '${baseUrl}api/v1/courses/popular';
   static const getCoursesBySubCategory = '${baseUrl}api/v1/courses/subcategory/';
 }

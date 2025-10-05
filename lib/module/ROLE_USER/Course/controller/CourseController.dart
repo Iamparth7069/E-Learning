@@ -30,17 +30,6 @@ class CourseController extends GetxController {
     }
   }
 
-  @override
-  void onReady() {
-    super.onReady();
-    // Additional setup after the controller is ready
-  }
-
-  @override
-  void onClose() {
-    // Clean up resources if needed
-    super.onClose();
-  }
 
   Future<void> fetchCourses() async {
     try {
@@ -100,7 +89,12 @@ class CourseController extends GetxController {
   Future<void> enrollInCourse(StudentCourse course) async {
     final int? courseId = course.courseId;
     if (courseId == null) {
-      Get.snackbar('Error', 'Invalid course');
+      Get.snackbar(
+        'Error', 
+        'Invalid course',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return;
     }
 
@@ -110,12 +104,18 @@ class CourseController extends GetxController {
     try {
       String? token = sharedPrefHelper.getString(SharedPrefHelper.token);
       if (token == null) {
-        Get.snackbar('Error', 'User not authenticated');
+        Get.snackbar(
+          'Error', 
+          'User not authenticated. Please login again.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
         enrollingCourseIds.remove(courseId);
         return;
       }
 
-      print("Course id $courseId");
+      print("🎓 Enrolling in course ID: $courseId");
+      
       final headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -125,21 +125,87 @@ class CourseController extends GetxController {
         'courseId': courseId,
       };
 
+      print("📤 Enrollment request body: $body");
+
       final response = await NetworkService.makePostRequest(
-        url: ApiUrl.getUserByCourse,
+        url: ApiUrl.enrollInCourse,
         headers: headers,
         body: body,
       );
 
+      print("📥 Enrollment response: ${response['statusCode']} - ${response['response']}");
+
       if (response['statusCode'] == 200 || response['statusCode'] == 201) {
-        Get.snackbar('Enrolled', 'You are enrolled in ${course.courseName}');
+        // Parse the enrollment response
+        final enrollmentData = response['response'];
+        if (enrollmentData != null) {
+          final enrollmentId = enrollmentData['enrollmentId'];
+          final userId = enrollmentData['userId'];
+          final completed = enrollmentData['completed'];
+          
+          print("✅ Enrollment successful - ID: $enrollmentId, User: $userId, Completed: $completed");
+          
+          Get.snackbar(
+            'Success! 🎉', 
+            'You are now enrolled in "${course.courseName}"',
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.check_circle, color: Colors.white),
+          );
+        } else {
+          Get.snackbar(
+            'Success! 🎉', 
+            'You are now enrolled in "${course.courseName}"',
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.check_circle, color: Colors.white),
+          );
+        }
       } else if (response['statusCode'] == 409) {
-        Get.snackbar('Already enrolled', 'You are already enrolled in this course');
+        Get.snackbar(
+          'Already Enrolled', 
+          'You are already enrolled in this course',
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          icon: const Icon(Icons.info, color: Colors.white),
+        );
+      } else if (response['statusCode'] == 400) {
+        Get.snackbar(
+          'Invalid Request', 
+          'Please check your course selection and try again',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+      } else if (response['statusCode'] == 401) {
+        Get.snackbar(
+          'Authentication Error', 
+          'Your session has expired. Please login again.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.lock, color: Colors.white),
+        );
       } else {
-        Get.snackbar('Error', 'Failed to enroll: ${response['response']}');
+        final errorMessage = response['response']?.toString() ?? 'Unknown error occurred';
+        Get.snackbar(
+          'Enrollment Failed', 
+          'Failed to enroll: $errorMessage',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Enrollment failed: $e');
+      print("❌ Enrollment error: $e");
+      Get.snackbar(
+        'Network Error', 
+        'Enrollment failed: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(Icons.wifi_off, color: Colors.white),
+      );
     } finally {
       enrollingCourseIds.remove(courseId);
     }
