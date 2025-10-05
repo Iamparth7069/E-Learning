@@ -1,7 +1,6 @@
 class ApiUrl {
-  // static const baseUrl = 'https://foal-true-supposedly.ngrok-free.app/';
-
   static const baseUrl = 'https://knapsacked-flor-hilariously.ngrok-free.dev/';
+  //static const baseUrl = 'http://10.154.59.58:8080/';
   static const loginApi = '${baseUrl}api/v1/auth/login';
   static const registerApi = '${baseUrl}api/v1/auth/register';
 
@@ -30,7 +29,8 @@ class ApiUrl {
 
   static const getStremeUsingRange = '${baseUrl}api/v1/videos/stream/range/';
   static const updateLession = '${baseUrl}api/v1/lessons/';
-  static const getUserByCourse = '${baseUrl}api/v1/enrollments/';
+  static const getUserByCourse = '${baseUrl}api/v1/enrollments';
   static const getAllCourse =  '${baseUrl}api/v1/courses/all';
   static const getAllPopularCourse =  '${baseUrl}api/v1/courses/popular';
+  static const getCoursesBySubCategory = '${baseUrl}api/v1/courses/subcategory/';
 }

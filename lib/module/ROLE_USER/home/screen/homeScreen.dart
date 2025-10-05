@@ -181,7 +181,7 @@ class HomeScreen extends StatelessWidget {
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text("All Courses", style: TextStyle(fontSize: 19.sp, fontWeight: FontWeight.bold)),
+                child: Text("My Courses", style: TextStyle(fontSize: 19.sp, fontWeight: FontWeight.bold)),
               ),
 
               GridView.builder(

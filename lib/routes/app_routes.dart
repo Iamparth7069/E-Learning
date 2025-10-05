@@ -16,6 +16,10 @@ abstract class Routes {
   static const AdminHome = _Paths.AdminHomeScreen;
   static const AdminDeskBoard = _Paths.DESKBOARDFORADMIN;
   static const SubCategory = _Paths.subCategoryPage;
+  static const UserSubCategory = _Paths.USER_SUB_CATEGORY;
+  static const UserCourse = _Paths.USER_COURSE;
+  static const UserLesson = _Paths.USER_LESSON;
+  static const UserLessonDetail = _Paths.USER_LESSON_DETAIL;
   static const InstructorScreen = _Paths.INSTRUCTORSCREEN;
 
 
@@ -46,6 +50,10 @@ abstract class _Paths {
 //admin Side
   static const ADMINCATEGORYADD = '/AdminCategoryAdd';
   static const subCategoryPage = '/SubCategoryScreen';
+  static const USER_SUB_CATEGORY = '/sub-category';
+  static const USER_COURSE = '/course';
+  static const USER_LESSON = '/lesson';
+  static const USER_LESSON_DETAIL = '/lesson-detail';
 
 
 

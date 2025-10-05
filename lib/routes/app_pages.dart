@@ -10,6 +10,14 @@ import '../module/ROLE_INSTRUCTORS/BottomNavBar/Screen/bottomNavBarinInstructor.
 import '../module/ROLE_USER/dashboard/screen/deskBoardScreen.dart';
 import '../module/ROLE_USER/home/screen/homeScreen.dart';
 import '../module/ROLE_USER/registerAccount/screen/RegisterScreen.dart';
+import '../module/ROLE_USER/SubCategory/screen/SubCategoryScreen.dart';
+import '../module/ROLE_USER/SubCategory/binding/SubCategoryBinding.dart';
+import '../module/ROLE_USER/Course/screen/CourseScreen.dart';
+import '../module/ROLE_USER/Course/binding/CourseBinding.dart';
+import '../module/ROLE_USER/Lesson/screen/LessonScreen.dart';
+import '../module/ROLE_USER/Lesson/binding/LessonBinding.dart';
+import '../module/ROLE_USER/LessonDetail/screen/LessonDetailScreen.dart';
+import '../module/ROLE_USER/LessonDetail/binding/LessonDetailBinding.dart';
 import '../module/login/screen/login.dart';
 import '../module/splashscreen/Screen/SplashScreen.dart';
 
@@ -66,6 +74,30 @@ class AppPages {
     GetPage(
       name: _Paths.subCategoryPage,
       page: () => SubCategory(),
+    ),
+
+    GetPage(
+      name: _Paths.USER_SUB_CATEGORY,
+      page: () => const SubCategoryScreen(),
+      binding: SubCategoryBinding(),
+    ),
+
+    GetPage(
+      name: _Paths.USER_COURSE,
+      page: () => const CourseScreen(),
+      binding: CourseBinding(),
+    ),
+
+    GetPage(
+      name: _Paths.USER_LESSON,
+      page: () => const LessonScreen(),
+      binding: LessonBinding(),
+    ),
+
+    GetPage(
+      name: _Paths.USER_LESSON_DETAIL,
+      page: () => const LessonDetailScreen(),
+      binding: LessonDetailBinding(),
     ),
 
     GetPage(
