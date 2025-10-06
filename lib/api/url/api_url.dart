@@ -33,6 +33,8 @@ class ApiUrl {
   static const enrollInCourse = '${baseUrl}api/v1/enrollments';
   static const getMyEnrollments = '${baseUrl}api/v1/enrollments/my-enrollment';
   static const getUserById = '${baseUrl}api/v1/users/';
+  static const getUserProfile = '${baseUrl}api/v1/users/profile';
+  static const changePassword = '${baseUrl}api/v1/users/change-password';
   static const getAllCourse =  '${baseUrl}api/v1/courses/all';
   static const getCourseById = '${baseUrl}api/v1/courses/';
   static const getLessonsByCourseId = '${baseUrl}api/v1/courses/';

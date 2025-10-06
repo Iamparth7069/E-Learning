@@ -289,10 +289,7 @@ class LessonDetailScreen extends StatelessWidget {
                       );
                     }
                     
-                    // Show enrollment message if not enrolled
-                    if (!controller.isEnrolled.value) {
-                      return _buildEnrollmentMessage(controller);
-                    }
+                    // Always allow access - no enrollment restrictions
                     
                     // Show video error if any (but not for PENDING status)
                     if (controller.videoError.value.isNotEmpty && 
@@ -329,11 +326,10 @@ class LessonDetailScreen extends StatelessWidget {
                     );
                   }),
                   
-                  // Video overlay (only show if not initialized, no error, and enrolled)
+                  // Video overlay (only show if not initialized and no error)
                   Obx(() {
                     if (!controller.isPlayerInitialized.value && 
-                        controller.videoError.value.isEmpty && 
-                        controller.isEnrolled.value) {
+                        controller.videoError.value.isEmpty) {
                       return Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
@@ -379,16 +375,12 @@ class LessonDetailScreen extends StatelessWidget {
                       final status = lesson.video.processingStatus;
                       final isReady = controller.isVideoReady.value;
                       final hasError = controller.videoError.value.isNotEmpty;
-                      final isEnrolled = controller.isEnrolled.value;
                       final isPreview = controller.previewMode.value;
                       
                       Color badgeColor;
                       String badgeText;
                       
-                      if (!isEnrolled) {
-                        badgeColor = Colors.blue;
-                        badgeText = 'Enroll Required';
-                      } else if (isPreview) {
+                      if (isPreview) {
                         badgeColor = Colors.orange;
                         badgeText = 'Preview Mode';
                       } else if (hasError && status.toLowerCase() != 'pending') {
@@ -818,73 +810,6 @@ class LessonDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEnrollmentMessage(LessonDetailController controller) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: Colors.black,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.school,
-                size: 60,
-                color: Colors.blue[300],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Enrollment Required',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please enroll in this course to access the full video content',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[300],
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Navigate to course enrollment or course details
-                  Get.back(); // Go back to course screen to enroll
-                  Get.snackbar(
-                    'Enrollment',
-                    'Please go back to the course screen to enroll',
-                    backgroundColor: Colors.blue,
-                    colorText: Colors.white,
-                    icon: const Icon(Icons.school, color: Colors.white),
-                  );
-                },
-                icon: const Icon(Icons.school),
-                label: const Text('Go to Course'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildDebugSection(LessonDetailController controller) {
     return Container(
@@ -920,7 +845,7 @@ class LessonDetailScreen extends StatelessWidget {
                 _buildDebugRow('Video ID', lesson.video.videoId?.toString() ?? 'N/A'),
                 _buildDebugRow('Video Status', lesson.video.processingStatus),
                 _buildDebugRow('Range Video URL', controller.getVideoStreamUrl()),
-                _buildDebugRow('Is Enrolled', controller.isEnrolled.value.toString()),
+                _buildDebugRow('Access Granted', 'Always Allowed'),
                 _buildDebugRow('Is Video Ready', controller.isVideoReady.value.toString()),
                 _buildDebugRow('Preview Mode', controller.previewMode.value.toString()),
                 _buildDebugRow('Player Initialized', controller.isPlayerInitialized.value.toString()),

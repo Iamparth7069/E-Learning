@@ -23,7 +23,7 @@ class LessonDetailController extends GetxController {
   var isVideoReady = false.obs;
   var retryCount = 0.obs;
   var maxRetries = 3.obs;
-  var isEnrolled = false.obs;
+  var isEnrolled = true.obs; // Always allow access
   var previewMode = false.obs;
   var previewTimeRemaining = 60.obs; // 60 seconds preview
   
@@ -105,8 +105,8 @@ class LessonDetailController extends GetxController {
         print('Lesson details loaded successfully: ${lesson?.lessonName}');
         // Check if video is ready for playback
         isVideoReady.value = isVideoReadyForPlayback();
-        // Check enrollment status
-        await checkEnrollmentStatus();
+        // Always allow access - no enrollment check needed
+        isEnrolled.value = true;
       } else {
         hasError.value = true;
         errorMessage.value = response["response"]?.toString() ?? 'Failed to load lesson details';
@@ -144,44 +144,21 @@ class LessonDetailController extends GetxController {
       return;
     }
 
-    // Check enrollment status first
-    if (!isEnrolled.value) {
-      videoError.value = 'Please enroll in this course to access the full video content';
-      previewMode.value = true;
-      Get.snackbar(
-        'Enrollment Required',
-        'Please enroll in this course to access the full video content',
-        backgroundColor: Colors.blue,
-        colorText: Colors.white,
-        icon: const Icon(Icons.school, color: Colors.white),
-      );
-      return;
-    }
+    // Always allow access - no enrollment restrictions
+    isEnrolled.value = true;
 
-    // Allow playback for PENDING status (preview mode)
+    // Allow playback for any status - show preview mode for non-completed videos
     if (!isVideoReadyForPlayback()) {
-      if (lesson!.video.processingStatus.toLowerCase() == 'pending') {
-        previewMode.value = true;
-        // Allow preview for 1 minute
-        _startPreviewTimer();
-        Get.snackbar(
-          'Preview Mode',
-          'Video is still processing. Showing preview for 1 minute.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          icon: const Icon(Icons.info, color: Colors.white),
-        );
-      } else {
-        videoError.value = 'Video is not ready for playback. Status: ${lesson!.video.processingStatus}';
-        Get.snackbar(
-          'Video Not Ready',
-          'Video is still ${lesson!.video.processingStatus.toLowerCase()}. Please wait for processing to complete.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          icon: const Icon(Icons.info, color: Colors.white),
-        );
-        return;
-      }
+      previewMode.value = true;
+      // Allow preview for 1 minute
+      _startPreviewTimer();
+      Get.snackbar(
+        'Preview Mode',
+        'Video is still processing. Showing preview for 1 minute.',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        icon: const Icon(Icons.info, color: Colors.white),
+      );
     }
 
     final url = getVideoStreamUrl();
@@ -250,12 +227,12 @@ class LessonDetailController extends GetxController {
         print("🔄 Attempt ${attempt + 1}/${maxRetries.value}");
         
         if (attempt == 0) {
-          // First attempt: Try direct range streaming with proper headers
-          print("📡 Trying direct range streaming...");
-          await _tryRangeStreaming(url, headers);
+          // First attempt: Try optimized range streaming
+          print("📡 Trying optimized range streaming...");
+          await _tryOptimizedRangeStreaming(url, headers);
         } else if (attempt == 1) {
-          // Second attempt: Try range streaming with different headers
-          print("🔄 Trying range streaming with modified headers...");
+          // Second attempt: Try range streaming with fallback headers
+          print("🔄 Trying range streaming with fallback headers...");
           await _tryRangeStreamingWithModifiedHeaders(url, headers);
         } else {
           // Third attempt: Try complete video download and local playback
@@ -290,11 +267,56 @@ class LessonDetailController extends GetxController {
         // Clean up failed attempt
         _disposeVideoPlayer();
         
-        // Wait before retry
-        final waitTime = 2 * (attempt + 1);
+        // Reduced wait time for faster retry
+        final waitTime = 1; // Reduced from 2 * (attempt + 1)
         print("⏳ Waiting ${waitTime}s before retry...");
         await Future.delayed(Duration(seconds: waitTime));
       }
+    }
+  }
+
+  Future<void> _tryOptimizedRangeStreaming(String url, Map<String, String>? headers) async {
+    print("🎥 Creating optimized VideoPlayerController for: $url");
+    print("🔑 Headers: ${headers ?? 'No headers'}");
+    
+    try {
+      // Create optimized headers for smooth streaming
+      final customHeaders = Map<String, String>.from(headers ?? {});
+      
+      // Remove any existing Range header to let the video player handle it
+      customHeaders.remove('Range');
+      
+      // Add optimized headers for smooth video streaming
+      customHeaders['Accept'] = 'video/mp4,video/*,*/*;q=0.9';
+      customHeaders['Accept-Encoding'] = 'identity'; // Disable compression for range requests
+      customHeaders['Connection'] = 'keep-alive';
+      customHeaders['Cache-Control'] = 'no-cache';
+      customHeaders['Pragma'] = 'no-cache';
+      customHeaders['User-Agent'] = 'Mozilla/5.0 (compatible; VideoPlayer/1.0)';
+      
+      print("🔧 Using optimized headers for smooth streaming: $customHeaders");
+      
+      videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(url),
+        httpHeaders: customHeaders,
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
+      );
+      
+      print("⏳ Initializing optimized video player...");
+      await videoPlayerController!.initialize();
+      print("✅ Optimized video player initialized successfully");
+      
+      // Add error listener
+      videoPlayerController!.addListener(_videoErrorListener);
+      print("👂 Error listener added");
+      
+    } catch (e) {
+      print("❌ Optimized range streaming failed: $e");
+      print("📍 Error type: ${e.runtimeType}");
+      rethrow;
     }
   }
 
@@ -433,6 +455,8 @@ class LessonDetailController extends GetxController {
       allowFullScreen: true,
       showOptions: true,
       showControls: true,
+      autoInitialize: true, // Auto initialize for faster loading
+      startAt: Duration.zero, // Start from beginning
       // Add error handling
       errorBuilder: (context, errorMessage) {
         print("🎬 Chewie error: $errorMessage");
@@ -511,45 +535,16 @@ class LessonDetailController extends GetxController {
     await initializeVideoPlayer();
   }
 
-  // Check if video is ready for playback
+  // Check if video is ready for playback - always return true to allow playback
   bool isVideoReadyForPlayback() {
-    return lesson?.video.processingStatus.toLowerCase() == 'completed';
+    return true; // Always allow playback regardless of status
   }
 
-  // Check enrollment status
+  // Check enrollment status - always allow access
   Future<void> checkEnrollmentStatus() async {
-    if (lesson == null) return;
-    
-    try {
-      String? token = sharedPrefHelper.getString(SharedPrefHelper.token);
-      if (token == null) {
-        isEnrolled.value = false;
-        return;
-      }
-
-      Map<String, String> headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token'
-      };
-
-      // Check if user is enrolled in this course
-      final response = await NetworkService.makeGetRequest(
-        url: '${ApiUrl.getUserByCourse}${lesson!.courseId}',
-        headers: headers,
-      );
-
-      if (response["statusCode"] == 200) {
-        List<dynamic> enrollments = response['response'];
-        // Check if current user is enrolled
-        isEnrolled.value = enrollments.isNotEmpty;
-        print('Enrollment status: ${isEnrolled.value}');
-      } else {
-        isEnrolled.value = false;
-      }
-    } catch (e) {
-      print('Error checking enrollment: $e');
-      isEnrolled.value = false;
-    }
+    // Always allow access - no enrollment restrictions
+    isEnrolled.value = true;
+    print('Access granted - no enrollment restrictions');
   }
 
   // Start preview timer
@@ -568,13 +563,13 @@ class LessonDetailController extends GetxController {
   // End preview mode
   void _endPreview() {
     previewMode.value = false;
-    _disposeVideoPlayer();
+    // Don't dispose video player - allow continued playback
     Get.snackbar(
       'Preview Ended',
-      'Please enroll in the course to continue watching',
-      backgroundColor: Colors.blue,
+      'You can continue watching the video',
+      backgroundColor: Colors.green,
       colorText: Colors.white,
-      icon: const Icon(Icons.school, color: Colors.white),
+      icon: const Icon(Icons.play_arrow, color: Colors.white),
     );
   }
 
