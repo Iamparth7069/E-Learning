@@ -37,22 +37,38 @@ class LessonDetailController extends GetxController {
   
   SharedPrefHelper sharedPrefHelper = SharedPrefHelper();
 
+  // Constructor to initialize with arguments
+  LessonDetailController({int? lessonId, String? lessonName, String? courseName}) {
+    if (lessonId != null) this.lessonId.value = lessonId;
+    if (lessonName != null) this.lessonName.value = lessonName;
+    if (courseName != null) this.courseName.value = courseName;
+  }
+
   @override
   void onInit() {
     super.onInit();
+    print('🎯 LessonDetailController initialized');
+    
     // Get lessonId from arguments
     if (Get.arguments != null) {
       lessonId.value = Get.arguments['lessonId'] ?? 0;
       lessonName.value = Get.arguments['lessonName'] ?? '';
       courseName.value = Get.arguments['courseName'] ?? '';
+      print('📚 Lesson ID: ${lessonId.value}, Name: ${lessonName.value}');
     }
+    
     if (lessonId.value > 0) {
       fetchLessonDetails();
+    } else {
+      print('⚠️ No lesson ID provided');
+      hasError.value = true;
+      errorMessage.value = 'No lesson ID provided';
     }
   }
 
   @override
   void onClose() {
+    print('🧹 LessonDetailController disposing...');
     // Clean up resources if needed
     _disposeVideoPlayer();
     super.onClose();
@@ -118,15 +134,7 @@ class LessonDetailController extends GetxController {
     return '';
   }
 
-  String getVideoStreamUrlFallback() {
-    if (lesson?.video.videoId != null) {
-      final url = '${ApiUrl.getStremeUrl}${lesson!.video.videoId}';
-      print('🎥 Fallback Stream URL: $url');
-      return url;
-    }
-    print('❌ No video ID available for fallback');
-    return '';
-  }
+  // Removed fallback URL as per requirement - only use range API
 
 
 
@@ -211,6 +219,10 @@ class LessonDetailController extends GetxController {
 
       _disposeVideoPlayer();
 
+      // Test server range support first
+      final supportsRange = await testServerRangeSupport(url, headers);
+      print('🔍 Server range support: $supportsRange');
+
       // Try to initialize video player with retry mechanism
       await _initializeVideoWithRetry(url, headers);
 
@@ -238,22 +250,17 @@ class LessonDetailController extends GetxController {
         print("🔄 Attempt ${attempt + 1}/${maxRetries.value}");
         
         if (attempt == 0) {
-          // First attempt: Try direct range streaming
+          // First attempt: Try direct range streaming with proper headers
           print("📡 Trying direct range streaming...");
           await _tryRangeStreaming(url, headers);
         } else if (attempt == 1) {
-          // Second attempt: Try chunked download and local playback
-          print("💾 Trying chunked download and local playback...");
-          await _tryLocalPlayback(url, headers);
+          // Second attempt: Try range streaming with different headers
+          print("🔄 Trying range streaming with modified headers...");
+          await _tryRangeStreamingWithModifiedHeaders(url, headers);
         } else {
-          // Third attempt: Try fallback URL with chunked download
-          final fallback = getVideoStreamUrlFallback();
-          print("🔄 Trying fallback URL with chunked download: $fallback");
-          if (fallback.isNotEmpty) {
-            await _tryLocalPlayback(fallback, headers);
-          } else {
-            throw Exception('No fallback URL available');
-          }
+          // Third attempt: Try complete video download and local playback
+          print("💾 Trying complete video download and local playback...");
+          await _tryCompleteVideoDownload(url, headers);
         }
 
         // If we reach here, initialization was successful
@@ -266,11 +273,23 @@ class LessonDetailController extends GetxController {
       } catch (e) {
         print("❌ Attempt ${attempt + 1} failed: $e");
         print("📍 Error type: ${e.runtimeType}");
+        
+        // Check if it's a range request error and try different approach
+        if (e.toString().contains('content range mismatch') || 
+            e.toString().contains('CoreMediaErrorDomain error -12939') ||
+            e.toString().contains('OSStatus error -12848')) {
+          print("🔧 Detected video streaming error, will try alternative approach");
+        }
+        
         if (attempt == maxRetries.value - 1) {
           // Last attempt failed
           print("💥 All attempts failed, throwing error");
           rethrow;
         }
+        
+        // Clean up failed attempt
+        _disposeVideoPlayer();
+        
         // Wait before retry
         final waitTime = 2 * (attempt + 1);
         print("⏳ Waiting ${waitTime}s before retry...");
@@ -284,9 +303,26 @@ class LessonDetailController extends GetxController {
     print("🔑 Headers: ${headers ?? 'No headers'}");
     
     try {
+      // Create a custom HTTP client that handles range requests properly
+      final customHeaders = Map<String, String>.from(headers ?? {});
+      
+      // Remove any existing Range header to let the video player handle it
+      customHeaders.remove('Range');
+      
+      // Add proper headers for video streaming
+      customHeaders['Accept'] = 'video/*,*/*;q=0.9';
+      customHeaders['Accept-Encoding'] = 'identity'; // Disable compression for range requests
+      customHeaders['Connection'] = 'keep-alive';
+      
+      print("🔧 Using custom headers for video streaming: $customHeaders");
+      
       videoPlayerController = VideoPlayerController.networkUrl(
         Uri.parse(url),
-        httpHeaders: headers ?? {},
+        httpHeaders: customHeaders,
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
       );
       
       print("⏳ Initializing video player...");
@@ -304,16 +340,89 @@ class LessonDetailController extends GetxController {
     }
   }
 
-  Future<void> _tryLocalPlayback(String url, Map<String, String>? headers) async {
-    final file = await _downloadToTempFile(url, headers);
-    _disposeVideoPlayer();
+  Future<void> _tryRangeStreamingWithModifiedHeaders(String url, Map<String, String>? headers) async {
+    print("🎥 Creating VideoPlayerController with modified headers for: $url");
     
-    videoPlayerController = VideoPlayerController.file(file);
-    await videoPlayerController!.initialize();
-    
-    // Add error listener
-    videoPlayerController!.addListener(_videoErrorListener);
+    try {
+      // Create headers optimized for range streaming
+      final customHeaders = Map<String, String>.from(headers ?? {});
+      
+      // Remove any existing Range header to let the video player handle it
+      customHeaders.remove('Range');
+      
+      // Add headers optimized for video streaming
+      customHeaders['Accept'] = 'video/mp4,video/*,*/*;q=0.9';
+      customHeaders['Accept-Encoding'] = 'identity'; // Disable compression
+      customHeaders['Connection'] = 'keep-alive';
+      customHeaders['Cache-Control'] = 'no-cache';
+      customHeaders['Pragma'] = 'no-cache';
+      
+      print("🔧 Using optimized headers for range streaming: $customHeaders");
+      
+      videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(url),
+        httpHeaders: customHeaders,
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
+      );
+      
+      print("⏳ Initializing video player with modified headers...");
+      await videoPlayerController!.initialize();
+      print("✅ Video player initialized successfully with modified headers");
+      
+      // Add error listener
+      videoPlayerController!.addListener(_videoErrorListener);
+      print("👂 Error listener added");
+      
+    } catch (e) {
+      print("❌ Range streaming with modified headers failed: $e");
+      print("📍 Error type: ${e.runtimeType}");
+      rethrow;
+    }
   }
+
+  Future<void> _tryCompleteVideoDownload(String url, Map<String, String>? headers) async {
+    print("💾 Starting complete video download for: $url");
+    
+    try {
+      // Get the complete video file size first
+      final headResponse = await NetworkService.makeHeadRequest(url: url, headers: headers);
+      final contentLength = headResponse['headers']?['content-length']?.first;
+      final fileSize = contentLength != null ? int.parse(contentLength) : null;
+      
+      print("📏 Complete video file size: ${fileSize ?? 'Unknown'} bytes");
+      
+      if (fileSize != null && fileSize > 0) {
+        // Download the complete video file
+        final file = await _downloadCompleteVideo(url, headers, fileSize);
+        _disposeVideoPlayer();
+        
+        print("📁 Video downloaded to: ${file.path}");
+        print("📊 Downloaded file size: ${file.lengthSync()} bytes");
+        
+        // Verify file integrity
+        if (file.lengthSync() != fileSize) {
+          throw Exception('Downloaded file size mismatch. Expected: $fileSize, Got: ${file.lengthSync()}');
+        }
+        
+        videoPlayerController = VideoPlayerController.file(file);
+        await videoPlayerController!.initialize();
+        
+        // Add error listener
+        videoPlayerController!.addListener(_videoErrorListener);
+        print("✅ Complete video download and playback setup successful");
+      } else {
+        throw Exception('Could not determine video file size');
+      }
+    } catch (e) {
+      print("❌ Complete video download failed: $e");
+      print("📍 Error type: ${e.runtimeType}");
+      rethrow;
+    }
+  }
+
 
   void _setupChewieController() {
     chewieController = ChewieController(
@@ -324,6 +433,48 @@ class LessonDetailController extends GetxController {
       allowFullScreen: true,
       showOptions: true,
       showControls: true,
+      // Add error handling
+      errorBuilder: (context, errorMessage) {
+        print("🎬 Chewie error: $errorMessage");
+        return Container(
+          color: Colors.black,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 60,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Video Playback Error',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  errorMessage,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => retryVideoInitialization(),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
       materialProgressColors: ChewieProgressColors(
         playedColor: Colors.blue,
         handleColor: Colors.blueAccent,
@@ -427,6 +578,50 @@ class LessonDetailController extends GetxController {
     );
   }
 
+  Future<File> _downloadCompleteVideo(String url, Map<String, String>? headers, int fileSize) async {
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/lesson_${lessonId.value}_complete.mp4';
+    final file = File(path);
+    
+    print("💾 Starting complete video download to: $path");
+    print("📏 Expected file size: $fileSize bytes");
+    
+    try {
+      // Download the complete video using a single request
+      final dio = Dio();
+      final response = await dio.get<ResponseBody>(
+        url,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: headers,
+          followRedirects: true,
+          validateStatus: (s) => (s ?? 500) < 400,
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        final sink = file.openWrite();
+        await response.data!.stream.pipe(sink as StreamConsumer<Uint8List>);
+        await sink.flush();
+        await sink.close();
+        
+        print("✅ Complete video download finished: ${file.lengthSync()} bytes");
+        
+        // Verify the download
+        if (file.lengthSync() != fileSize) {
+          throw Exception('Download size mismatch. Expected: $fileSize, Got: ${file.lengthSync()}');
+        }
+        
+        return file;
+      } else {
+        throw Exception('Download failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("❌ Error downloading complete video: $e");
+      rethrow;
+    }
+  }
+
   Future<File> _downloadToTempFile(String url, Map<String, String>? headers) async {
     final dir = await getTemporaryDirectory();
     final path = '${dir.path}/lesson_${lessonId.value}.mp4';
@@ -461,7 +656,7 @@ class LessonDetailController extends GetxController {
   }
 
   Future<void> _downloadVideoInChunks(String url, Map<String, String>? headers, File file, int fileSize) async {
-    const chunkSize = 1024 * 1024; // 1MB chunks
+    const chunkSize = 2 * 1024 * 1024; // 2MB chunks for better performance
     final sink = file.openWrite();
     
     try {
@@ -469,21 +664,53 @@ class LessonDetailController extends GetxController {
         final end = (start + chunkSize - 1).clamp(0, fileSize - 1);
         final range = 'bytes=$start-$end';
         
-        print("📥 Downloading chunk: $range");
+        print("📥 Downloading chunk: $range (${((start / fileSize) * 100).toStringAsFixed(1)}%)");
         
-        final response = await NetworkService.makeRangeRequest(
-          url: url,
-          range: range,
-          headers: headers,
-        );
+        // Retry mechanism for each chunk
+        bool chunkDownloaded = false;
+        int chunkRetries = 0;
+        const maxChunkRetries = 3;
         
-        if (response['statusCode'] == 206) {
-          final chunkData = response['response'] as List<int>;
-          sink.add(chunkData);
-          print("✅ Chunk downloaded: ${chunkData.length} bytes");
-        } else {
-          print("❌ Chunk download failed with status: ${response['statusCode']}");
-          throw Exception('Chunk download failed');
+        while (!chunkDownloaded && chunkRetries < maxChunkRetries) {
+          try {
+            final response = await NetworkService.makeRangeRequest(
+              url: url,
+              range: range,
+              headers: headers,
+            );
+            
+            if (response['statusCode'] == 206) {
+              final chunkData = response['response'] as List<int>;
+              sink.add(chunkData);
+              print("✅ Chunk downloaded: ${chunkData.length} bytes");
+              chunkDownloaded = true;
+            } else if (response['statusCode'] == 200) {
+              // Server doesn't support range requests, download entire file
+              print("⚠️ Server doesn't support range requests, downloading entire file");
+              final chunkData = response['response'] as List<int>;
+              sink.add(chunkData);
+              chunkDownloaded = true;
+              break; // Exit the chunk loop since we got the whole file
+            } else {
+              print("❌ Chunk download failed with status: ${response['statusCode']}");
+              chunkRetries++;
+              if (chunkRetries < maxChunkRetries) {
+                print("🔄 Retrying chunk download (attempt ${chunkRetries + 1}/$maxChunkRetries)");
+                await Future.delayed(Duration(seconds: 1));
+              }
+            }
+          } catch (e) {
+            print("❌ Chunk download error: $e");
+            chunkRetries++;
+            if (chunkRetries < maxChunkRetries) {
+              print("🔄 Retrying chunk download (attempt ${chunkRetries + 1}/$maxChunkRetries)");
+              await Future.delayed(Duration(seconds: 1));
+            }
+          }
+        }
+        
+        if (!chunkDownloaded) {
+          throw Exception('Failed to download chunk after $maxChunkRetries attempts');
         }
       }
     } finally {
@@ -569,7 +796,7 @@ class LessonDetailController extends GetxController {
     }
 
     final url = getVideoStreamUrl();
-    print("🔍 Testing video URL: $url");
+    print("🔍 Testing range video URL: $url");
     
     if (url.isEmpty) {
       print("❌ Video URL is empty");
@@ -584,7 +811,7 @@ class LessonDetailController extends GetxController {
               'Authorization': 'Bearer $token',
             };
 
-      print("🌐 Making HEAD request to test URL...");
+      print("🌐 Making HEAD request to test range URL...");
       final response = await NetworkService.makeHeadRequest(
         url: url,
         headers: headers,
@@ -594,12 +821,16 @@ class LessonDetailController extends GetxController {
       print("📋 Response headers: ${response['headers']}");
       
       if (response['statusCode'] == 200) {
-        print("✅ Video URL is accessible");
+        print("✅ Range video URL is accessible");
+        final contentLength = response['headers']?['content-length']?.first;
+        final acceptRanges = response['headers']?['accept-ranges']?.first;
+        print("📏 Content-Length: $contentLength");
+        print("🎯 Accept-Ranges: $acceptRanges");
       } else {
-        print("❌ Video URL returned status: ${response['statusCode']}");
+        print("❌ Range video URL returned status: ${response['statusCode']}");
       }
     } catch (e) {
-      print("❌ Error testing video URL: $e");
+      print("❌ Error testing range video URL: $e");
     }
   }
 
@@ -638,13 +869,46 @@ class LessonDetailController extends GetxController {
       
       if (response['statusCode'] == 206) {
         print("✅ Range request successful (206 Partial Content)");
+        final contentRange = response['headers']?['content-range']?.first;
+        print("📏 Content-Range: $contentRange");
       } else if (response['statusCode'] == 200) {
-        print("⚠️ Range request returned 200 (full content)");
+        print("⚠️ Range request returned 200 (full content) - server may not support range requests");
       } else {
         print("❌ Range request failed with status: ${response['statusCode']}");
       }
     } catch (e) {
       print("❌ Error testing range request: $e");
+    }
+  }
+
+  // Test server's range request support
+  Future<bool> testServerRangeSupport(String url, Map<String, String>? headers) async {
+    try {
+      print("🔍 Testing server range support for: $url");
+      
+      // Test with a small range request
+      final response = await NetworkService.makeRangeRequest(
+        url: url,
+        range: 'bytes=0-1023',
+        headers: headers,
+      );
+      
+      final statusCode = response['statusCode'];
+      print("📊 Range test response: $statusCode");
+      
+      if (statusCode == 206) {
+        print("✅ Server supports range requests");
+        return true;
+      } else if (statusCode == 200) {
+        print("⚠️ Server doesn't support range requests (returned full content)");
+        return false;
+      } else {
+        print("❌ Server range test failed with status: $statusCode");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Error testing server range support: $e");
+      return false;
     }
   }
 

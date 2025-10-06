@@ -9,10 +9,29 @@ class LessonDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use Get.find() to get existing controller or create new one if needed
-    final LessonDetailController controller = Get.find<LessonDetailController>();
+    // Get arguments from navigation
+    final args = Get.arguments as Map<String, dynamic>?;
+    final lessonId = args?['lessonId'] as int?;
+    final lessonName = args?['lessonName'] as String?;
+    final courseName = args?['courseName'] as String?;
     
-    return Scaffold(
+    // Initialize controller with arguments
+    final LessonDetailController controller = Get.put(
+      LessonDetailController(
+        lessonId: lessonId,
+        lessonName: lessonName,
+        courseName: courseName,
+      ),
+    );
+    
+    // Handle back button to properly dispose controller
+    return WillPopScope(
+      onWillPop: () async {
+        // Dispose controller when going back
+        Get.delete<LessonDetailController>();
+        return true;
+      },
+      child: Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Obx(() => Text(
@@ -30,7 +49,11 @@ class LessonDetailScreen extends StatelessWidget {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            // Dispose controller before going back
+            Get.delete<LessonDetailController>();
+            Get.back();
+          },
         ),
         actions: [
           IconButton(
@@ -203,6 +226,7 @@ class LessonDetailScreen extends StatelessWidget {
           ),
         );
       }),
+      ),
     );
   }
 
@@ -895,8 +919,7 @@ class LessonDetailScreen extends StatelessWidget {
               children: [
                 _buildDebugRow('Video ID', lesson.video.videoId?.toString() ?? 'N/A'),
                 _buildDebugRow('Video Status', lesson.video.processingStatus),
-                _buildDebugRow('Video URL', controller.getVideoStreamUrl()),
-                _buildDebugRow('Fallback URL', controller.getVideoStreamUrlFallback()),
+                _buildDebugRow('Range Video URL', controller.getVideoStreamUrl()),
                 _buildDebugRow('Is Enrolled', controller.isEnrolled.value.toString()),
                 _buildDebugRow('Is Video Ready', controller.isVideoReady.value.toString()),
                 _buildDebugRow('Preview Mode', controller.previewMode.value.toString()),
