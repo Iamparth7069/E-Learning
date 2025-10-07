@@ -24,12 +24,9 @@ class DeskBoardScreenController extends GetxController{
   void init() async{
 
       screens = [
-
         NavigationModel(name: "Home", icon: "assets/Icon/home.png", iconFilled: "assets/Icon/homeFilled.png", screen: const HomeScreen()),
         NavigationModel(name: "Category", icon: "assets/Icon/category.png", iconFilled: "assets/Icon/categoryFilled.png", screen: const CategoryScreen()),
-        NavigationModel(name: "Search", icon: "assets/Icon/search.png", iconFilled: "assets/Icon/searchFill.png", screen: const ProfileScreen()),
         NavigationModel(name: "Profile", icon: "assets/Icon/profile.png", iconFilled: "assets/Icon/profileFilled.png", screen: const ProfileScreen()),
-        
       ];
   }
 

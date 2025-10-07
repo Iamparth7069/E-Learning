@@ -88,7 +88,6 @@ class HomeScreen extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final course = controller.allPopularCourse[index];
                     final imageUrl = course.image?.imageUrl;
-
                     return GestureDetector(
                       onTap: () {
 
@@ -141,8 +140,8 @@ class HomeScreen extends StatelessWidget {
                                   fontSize: 15.sp,
                                   color: Colors.grey.shade600,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                overflow: TextOverflow.visible,
                               ),
                             ),
                             Padding(
@@ -201,7 +200,7 @@ class HomeScreen extends StatelessWidget {
                       Text(
                         "${controller.myEnrolledCourses.length} enrolled",
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize: 15.sp,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
                         ),

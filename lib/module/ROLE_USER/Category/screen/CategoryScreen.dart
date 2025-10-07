@@ -24,10 +24,6 @@ class CategoryScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-          onPressed: () => Get.back(),
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.black87),
