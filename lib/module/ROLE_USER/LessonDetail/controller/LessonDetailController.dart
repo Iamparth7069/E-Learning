@@ -27,6 +27,28 @@ class LessonDetailController extends GetxController {
   var previewMode = false.obs;
   var previewTimeRemaining = 60.obs; // 60 seconds preview
   
+  // Lesson progress tracking
+  var enrollmentId = 0.obs;
+  var lastWatchedSeconds = 0.obs;
+  var isCompleted = false.obs;
+  var totalVideoDuration = 0.obs;
+  var currentVideoPosition = 0.obs;
+  Timer? progressUpdateTimer;
+  var isProgressTrackingEnabled = true.obs;
+  
+  // Rating system
+  var userRating = 0.obs;
+  var userComment = ''.obs;
+  var isRatingSubmitted = false.obs;
+  var isRatingLoading = false.obs;
+  var ratingError = ''.obs;
+  
+  // Average rating system
+  var averageRating = 0.0.obs;
+  var totalRating = 0.obs;
+  var isAverageRatingLoading = false.obs;
+  var averageRatingError = ''.obs;
+  
   Lesson? lesson;
   var lessonId = 0.obs;
   var lessonName = ''.obs;
@@ -38,10 +60,11 @@ class LessonDetailController extends GetxController {
   SharedPrefHelper sharedPrefHelper = SharedPrefHelper();
 
   // Constructor to initialize with arguments
-  LessonDetailController({int? lessonId, String? lessonName, String? courseName}) {
+  LessonDetailController({int? lessonId, String? lessonName, String? courseName, int? enrollmentId}) {
     if (lessonId != null) this.lessonId.value = lessonId;
     if (lessonName != null) this.lessonName.value = lessonName;
     if (courseName != null) this.courseName.value = courseName;
+    if (enrollmentId != null) this.enrollmentId.value = enrollmentId;
   }
 
   @override
@@ -54,7 +77,8 @@ class LessonDetailController extends GetxController {
       lessonId.value = Get.arguments['lessonId'] ?? 0;
       lessonName.value = Get.arguments['lessonName'] ?? '';
       courseName.value = Get.arguments['courseName'] ?? '';
-      print('📚 Lesson ID: ${lessonId.value}, Name: ${lessonName.value}');
+      enrollmentId.value = Get.arguments['enrollmentId'] ?? 0;
+      print('📚 Lesson ID: ${lessonId.value}, Name: ${lessonName.value}, Enrollment ID: ${enrollmentId.value}');
     }
     
     if (lessonId.value > 0) {
@@ -69,6 +93,10 @@ class LessonDetailController extends GetxController {
   @override
   void onClose() {
     print('🧹 LessonDetailController disposing...');
+    // Stop progress tracking
+    _stopProgressTracking();
+    // Update lesson progress before disposing
+    _updateLessonProgressOnDispose();
     // Clean up resources if needed
     _disposeVideoPlayer();
     super.onClose();
@@ -107,6 +135,8 @@ class LessonDetailController extends GetxController {
         isVideoReady.value = isVideoReadyForPlayback();
         // Always allow access - no enrollment check needed
         isEnrolled.value = true;
+        // Fetch average rating for the course
+        fetchAverageRating();
       } else {
         hasError.value = true;
         errorMessage.value = response["response"]?.toString() ?? 'Failed to load lesson details';
@@ -245,6 +275,8 @@ class LessonDetailController extends GetxController {
         _setupChewieController();
         isPlayerInitialized.value = true;
         videoError.value = '';
+        // Start progress tracking
+        _startProgressTracking();
         return;
 
       } catch (e) {
@@ -311,7 +343,9 @@ class LessonDetailController extends GetxController {
       
       // Add error listener
       videoPlayerController!.addListener(_videoErrorListener);
-      print("👂 Error listener added");
+      // Add progress tracking listener
+      videoPlayerController!.addListener(_videoProgressListener);
+      print("👂 Error listener and progress listener added");
       
     } catch (e) {
       print("❌ Optimized range streaming failed: $e");
@@ -353,7 +387,9 @@ class LessonDetailController extends GetxController {
       
       // Add error listener
       videoPlayerController!.addListener(_videoErrorListener);
-      print("👂 Error listener added");
+      // Add progress tracking listener
+      videoPlayerController!.addListener(_videoProgressListener);
+      print("👂 Error listener and progress listener added");
       
     } catch (e) {
       print("❌ Range streaming failed: $e");
@@ -396,7 +432,9 @@ class LessonDetailController extends GetxController {
       
       // Add error listener
       videoPlayerController!.addListener(_videoErrorListener);
-      print("👂 Error listener added");
+      // Add progress tracking listener
+      videoPlayerController!.addListener(_videoProgressListener);
+      print("👂 Error listener and progress listener added");
       
     } catch (e) {
       print("❌ Range streaming with modified headers failed: $e");
@@ -434,6 +472,8 @@ class LessonDetailController extends GetxController {
         
         // Add error listener
         videoPlayerController!.addListener(_videoErrorListener);
+        // Add progress tracking listener
+        videoPlayerController!.addListener(_videoProgressListener);
         print("✅ Complete video download and playback setup successful");
       } else {
         throw Exception('Could not determine video file size');
@@ -522,12 +562,111 @@ class LessonDetailController extends GetxController {
     }
   }
 
+  void _videoProgressListener() {
+    if (videoPlayerController != null && videoPlayerController!.value.isInitialized) {
+      final position = videoPlayerController!.value.position;
+      final duration = videoPlayerController!.value.duration;
+      
+      // Update current position
+      currentVideoPosition.value = position.inSeconds;
+      totalVideoDuration.value = duration.inSeconds;
+      
+      // Update last watched seconds
+      lastWatchedSeconds.value = position.inSeconds;
+      
+      // Check if video is completed (90% watched)
+      if (duration.inSeconds > 0) {
+        final progressPercentage = (position.inSeconds / duration.inSeconds) * 100;
+        if (progressPercentage >= 90 && !isCompleted.value) {
+          isCompleted.value = true;
+          print("🎉 Video completed! Watched ${progressPercentage.toStringAsFixed(1)}%");
+          // Update progress immediately when completed
+          _updateLessonProgress();
+        }
+      }
+    }
+  }
+
   void _disposeVideoPlayer() {
     chewieController?.dispose();
     chewieController = null;
     videoPlayerController?.dispose();
     videoPlayerController = null;
     isPlayerInitialized.value = false;
+  }
+
+  // Start progress tracking timer
+  void _startProgressTracking() {
+    if (!isProgressTrackingEnabled.value) return;
+    
+    progressUpdateTimer?.cancel();
+    progressUpdateTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (isProgressTrackingEnabled.value && videoPlayerController != null) {
+        _updateLessonProgress();
+      }
+    });
+    print("⏰ Progress tracking started - updating every 30 seconds");
+  }
+
+  // Stop progress tracking timer
+  void _stopProgressTracking() {
+    progressUpdateTimer?.cancel();
+    progressUpdateTimer = null;
+    isProgressTrackingEnabled.value = false;
+    print("⏹️ Progress tracking stopped");
+  }
+
+  // Update lesson progress on dispose
+  Future<void> _updateLessonProgressOnDispose() async {
+    if (enrollmentId.value > 0 && lessonId.value > 0) {
+      print("💾 Updating lesson progress on dispose...");
+      await _updateLessonProgress();
+    }
+  }
+
+  // Update lesson progress API call
+  Future<void> _updateLessonProgress() async {
+    if (enrollmentId.value <= 0 || lessonId.value <= 0) {
+      print("⚠️ Cannot update progress - missing enrollmentId or lessonId");
+      return;
+    }
+
+    try {
+      String? token = sharedPrefHelper.getString(SharedPrefHelper.token);
+      if (token == null) {
+        print("❌ No authentication token available");
+        return;
+      }
+
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      };
+
+      Map<String, dynamic> body = {
+        "enrollmentId": enrollmentId.value,
+        "lessonId": lessonId.value,
+        "completed": isCompleted.value,
+        "lastWatchedSeconds": lastWatchedSeconds.value
+      };
+
+      print("📤 Updating lesson progress: $body");
+
+      final response = await NetworkService.makePostRequest(
+        url: '${ApiUrl.baseUrl}/api/v1/lesson-progress',
+        headers: headers,
+        body: body,
+      );
+
+      if (response["statusCode"] == 200 || response["statusCode"] == 201) {
+        print("✅ Lesson progress updated successfully");
+        print("📊 Progress: ${lastWatchedSeconds.value}s watched, Completed: ${isCompleted.value}");
+      } else {
+        print("❌ Failed to update lesson progress: ${response["response"]}");
+      }
+    } catch (e) {
+      print("❌ Error updating lesson progress: $e");
+    }
   }
 
   // Retry video initialization
@@ -910,5 +1049,201 @@ class LessonDetailController extends GetxController {
   void addComment() {
     // TODO: Implement comment functionality
     Get.snackbar('Comments', 'Comment functionality coming soon');
+  }
+
+  // Manual progress update method for testing
+  Future<void> updateProgressManually() async {
+    await _updateLessonProgress();
+    Get.snackbar(
+      'Progress Updated',
+      'Lesson progress has been updated successfully',
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      icon: const Icon(Icons.check, color: Colors.white),
+    );
+  }
+
+  // Rating methods
+  void setRating(int rating) {
+    userRating.value = rating;
+    ratingError.value = '';
+    print("⭐ Rating set to: $rating");
+  }
+
+  void setComment(String comment) {
+    userComment.value = comment;
+    ratingError.value = '';
+  }
+
+  Future<void> submitRating() async {
+    if (enrollmentId.value <= 0) {
+      ratingError.value = 'Enrollment ID is required';
+      Get.snackbar(
+        'Error',
+        'Enrollment ID is required',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+      return;
+    }
+
+    if (userRating.value <= 0) {
+      ratingError.value = 'Please select a rating';
+      Get.snackbar(
+        'Error',
+        'Please select a rating',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+      return;
+    }
+
+    try {
+      isRatingLoading.value = true;
+      ratingError.value = '';
+
+      String? token = sharedPrefHelper.getString(SharedPrefHelper.token);
+      if (token == null) {
+        ratingError.value = 'Authentication required';
+        Get.snackbar(
+          'Error',
+          'Authentication required',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+        return;
+      }
+
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      };
+
+      Map<String, dynamic> body = {
+        "enrollmentId": enrollmentId.value,
+        "rating": userRating.value,
+        "comment": userComment.value.isNotEmpty ? userComment.value : "Good lesson content"
+      };
+
+      print("📤 Submitting rating: $body");
+
+      final response = await NetworkService.makePostRequest(
+        url: '${ApiUrl.baseUrl}/api/v1/ratings/rate',
+        headers: headers,
+        body: body,
+      );
+
+      if (response["statusCode"] == 200 || response["statusCode"] == 201) {
+        isRatingSubmitted.value = true;
+        print("✅ Rating submitted successfully");
+        Get.snackbar(
+          'Rating Submitted',
+          'Thank you for rating this lesson!',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: const Icon(Icons.star, color: Colors.white),
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        ratingError.value = response["response"]?.toString() ?? 'Failed to submit rating';
+        print("❌ Failed to submit rating: ${response["response"]}");
+        Get.snackbar(
+          'Error',
+          'Failed to submit rating. Please try again.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+      }
+    } catch (e) {
+      ratingError.value = 'An error occurred while submitting rating';
+      print("❌ Error submitting rating: $e");
+      Get.snackbar(
+        'Error',
+        'An error occurred while submitting rating',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    } finally {
+      isRatingLoading.value = false;
+    }
+  }
+
+  void resetRating() {
+    userRating.value = 0;
+    userComment.value = '';
+    isRatingSubmitted.value = false;
+    ratingError.value = '';
+  }
+
+  // Average rating methods
+  Future<void> fetchAverageRating() async {
+    if (lesson?.courseId == null) {
+      print("⚠️ Cannot fetch average rating - no course ID available");
+      return;
+    }
+
+    try {
+      isAverageRatingLoading.value = true;
+      averageRatingError.value = '';
+
+      String? token = sharedPrefHelper.getString(SharedPrefHelper.token);
+      if (token == null) {
+        averageRatingError.value = 'Authentication required';
+        return;
+      }
+
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      };
+
+      final courseId = lesson!.courseId;
+      final url = '${ApiUrl.baseUrl}/api/v1/ratings/average-rating/$courseId';
+      
+      print("📤 Fetching average rating for course ID: $courseId");
+      print("🌐 URL: $url");
+
+      final response = await NetworkService.makeGetRequest(
+        url: url,
+        headers: headers,
+      );
+
+      if (response["statusCode"] == 200) {
+        final data = response['response'];
+        averageRating.value = (data['averageRating'] ?? 0.0).toDouble();
+        totalRating.value = data['totalRating'] ?? 0;
+        print("✅ Average rating fetched successfully: ${averageRating.value} (${totalRating.value} ratings)");
+      } else {
+        averageRatingError.value = response["response"]?.toString() ?? 'Failed to fetch average rating';
+        print("❌ Failed to fetch average rating: ${response["response"]}");
+      }
+    } catch (e) {
+      averageRatingError.value = 'An error occurred while fetching average rating';
+      print("❌ Error fetching average rating: $e");
+    } finally {
+      isAverageRatingLoading.value = false;
+    }
+  }
+
+  String getRatingText(double rating) {
+    if (rating >= 4.5) return 'Excellent';
+    if (rating >= 3.5) return 'Very Good';
+    if (rating >= 2.5) return 'Good';
+    if (rating >= 1.5) return 'Fair';
+    if (rating >= 0.5) return 'Poor';
+    return 'No Rating';
+  }
+
+  Color getRatingColor(double rating) {
+    if (rating >= 4.0) return Colors.green;
+    if (rating >= 3.0) return Colors.blue;
+    if (rating >= 2.0) return Colors.orange;
+    if (rating >= 1.0) return Colors.red;
+    return Colors.grey;
   }
 }

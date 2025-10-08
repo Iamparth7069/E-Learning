@@ -5,6 +5,7 @@ class Course {
   final bool enabled;
   final ImageData image;
   final int subCategoryId;
+  final int instructorId;
 
   Course({
     required this.courseId,
@@ -13,6 +14,7 @@ class Course {
     required this.enabled,
     required this.image,
     required this.subCategoryId,
+    required this.instructorId,
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Course {
       enabled: json['enabled'],
       image: ImageData.fromJson(json['image']),
       subCategoryId: json['subCategoryId'],
+      instructorId: json['instructorId'],
     );
   }
 
@@ -34,6 +37,7 @@ class Course {
       'enabled': enabled,
       'image': image.toJson(),
       'subCategoryId': subCategoryId,
+      'instructorId': instructorId,
     };
   }
 }
@@ -72,4 +76,82 @@ class ImageData {
       'objectName': objectName,
     };
   }
+}
+
+class Enrollment {
+  final int enrollmentId;
+  final int userId;
+  final int courseId;
+  final bool completed;
+
+  Enrollment({
+    required this.enrollmentId,
+    required this.userId,
+    required this.courseId,
+    required this.completed,
+  });
+
+  factory Enrollment.fromJson(Map<String, dynamic> json) {
+    return Enrollment(
+      enrollmentId: json['enrollmentId'],
+      userId: json['userId'],
+      courseId: json['courseId'],
+      completed: json['completed'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'enrollmentId': enrollmentId,
+      'userId': userId,
+      'courseId': courseId,
+      'completed': completed,
+    };
+  }
+}
+
+class User {
+  final int userId;
+  final String firstName;
+  final String lastName;
+  final String email;
+  final bool enabled;
+  final String role;
+  final ImageData image;
+
+  User({
+    required this.userId,
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.enabled,
+    required this.role,
+    required this.image,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      userId: json['userId'],
+      firstName: json['firstName'],
+      lastName: json['lastName'],
+      email: json['email'],
+      enabled: json['enabled'],
+      role: json['role'],
+      image: ImageData.fromJson(json['image']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'enabled': enabled,
+      'role': role,
+      'image': image.toJson(),
+    };
+  }
+
+  String get fullName => '$firstName $lastName';
 }

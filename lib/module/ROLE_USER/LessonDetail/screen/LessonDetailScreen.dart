@@ -14,6 +14,7 @@ class LessonDetailScreen extends StatelessWidget {
     final lessonId = args?['lessonId'] as int?;
     final lessonName = args?['lessonName'] as String?;
     final courseName = args?['courseName'] as String?;
+    final enrollmentId = args?['enrollmentId'] as int?;
     
     // Initialize controller with arguments
     final LessonDetailController controller = Get.put(
@@ -21,6 +22,7 @@ class LessonDetailScreen extends StatelessWidget {
         lessonId: lessonId,
         lessonName: lessonName,
         courseName: courseName,
+        enrollmentId: enrollmentId,
       ),
     );
     
@@ -212,6 +214,10 @@ class LessonDetailScreen extends StatelessWidget {
                 
                 // Comments Section
                 _buildCommentsSection(controller),
+                const SizedBox(height: 16),
+                
+                // Rating Section
+                _buildRatingSection(controller),
                 const SizedBox(height: 16),
                 
                 // Debug Section (only in debug mode)
@@ -423,6 +429,61 @@ class LessonDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 4),
+                // Progress indicator
+                Obx(() {
+                  if (controller.totalVideoDuration.value > 0) {
+                    final progress = controller.currentVideoPosition.value / controller.totalVideoDuration.value;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.play_circle_outline,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Progress: ${controller.currentVideoPosition.value}s / ${controller.totalVideoDuration.value}s',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const Spacer(),
+                            if (controller.isCompleted.value)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Completed',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: Colors.grey[300],
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            controller.isCompleted.value ? Colors.green : Colors.blue,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
               ],
             ),
           ),
@@ -467,6 +528,12 @@ class LessonDetailScreen extends StatelessWidget {
           _buildInfoRow('Sequence', lesson.sequenceNumber?.toString() ?? 'N/A'),
           _buildInfoRow('Video Status', controller.getProcessingStatusText(lesson.video.processingStatus)),
           _buildInfoRow('Comments', '${lesson.comments?.length ?? 0}'),
+          
+          // Average Rating Display
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 8),
+          _buildAverageRatingDisplay(controller),
         ],
       ),
     );
@@ -501,6 +568,196 @@ class LessonDetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildAverageRatingDisplay(LessonDetailController controller) {
+    return Obx(() {
+      if (controller.isAverageRatingLoading.value) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Loading course rating...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (controller.averageRatingError.value.isNotEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red[200]!),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red[600],
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Failed to load rating: ${controller.averageRatingError.value}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red[700],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      final rating = controller.averageRating.value;
+      final totalRatings = controller.totalRating.value;
+      
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.amber[50]!,
+              Colors.orange[50]!,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.amber[200]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.star_rounded,
+                  color: Colors.amber[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Course Rating',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            Row(
+              children: [
+                // Star Rating Display
+                Row(
+                  children: List.generate(5, (index) {
+                    final starIndex = index + 1;
+                    return Icon(
+                      starIndex <= rating
+                          ? Icons.star_rounded
+                          : starIndex <= rating + 0.5
+                              ? Icons.star_half_rounded
+                              : Icons.star_border_rounded,
+                      size: 24,
+                      color: Colors.amber[600],
+                    );
+                  }),
+                ),
+                const SizedBox(width: 12),
+                
+                // Rating Number and Text
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      rating.toStringAsFixed(1),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: controller.getRatingColor(rating),
+                      ),
+                    ),
+                    Text(
+                      controller.getRatingText(rating),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const Spacer(),
+                
+                // Total Ratings Count
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[100],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${totalRatings} ${totalRatings == 1 ? 'rating' : 'ratings'}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            // Rating Progress Bar (if there are ratings)
+            if (totalRatings > 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: rating / 5.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: controller.getRatingColor(rating),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildContentSection(LessonDetailController controller) {
@@ -663,6 +920,326 @@ class LessonDetailScreen extends StatelessWidget {
                 );
               },
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingSection(LessonDetailController controller) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue[50]!,
+            Colors.purple[50]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.star_rounded,
+                  color: Colors.amber[700],
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Rate This Lesson',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              Obx(() {
+                if (controller.isRatingSubmitted.value) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green[100],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.green[700],
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Rated',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Star Rating
+          Obx(() {
+            if (controller.isRatingSubmitted.value) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green[600],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Thank you for rating this lesson!',
+                      style: TextStyle(
+                        color: Colors.green[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'How would you rate this lesson?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Star Rating Widget
+                Row(
+                  children: List.generate(5, (index) {
+                    final starIndex = index + 1;
+                    return GestureDetector(
+                      onTap: () => controller.setRating(starIndex),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        child: Obx(() {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              starIndex <= controller.userRating.value
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              size: 40,
+                              color: starIndex <= controller.userRating.value
+                                  ? Colors.amber[600]
+                                  : Colors.grey[400],
+                            ),
+                          );
+                        }),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 8),
+                
+                // Rating Text
+                Obx(() {
+                  if (controller.userRating.value > 0) {
+                    String ratingText = '';
+                    switch (controller.userRating.value) {
+                      case 1:
+                        ratingText = 'Poor';
+                        break;
+                      case 2:
+                        ratingText = 'Fair';
+                        break;
+                      case 3:
+                        ratingText = 'Good';
+                        break;
+                      case 4:
+                        ratingText = 'Very Good';
+                        break;
+                      case 5:
+                        ratingText = 'Excellent';
+                        break;
+                    }
+                    return Text(
+                      ratingText,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.amber[700],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+                const SizedBox(height: 20),
+                
+                // Comment Section
+                const Text(
+                  'Share your thoughts (optional)',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: TextField(
+                    onChanged: controller.setComment,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Tell us what you think about this lesson...',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Error Message
+                Obx(() {
+                  if (controller.ratingError.value.isNotEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red[600],
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              controller.ratingError.value,
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+                
+                // Submit Button
+                Obx(() {
+                  return SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: controller.isRatingLoading.value
+                          ? null
+                          : controller.submitRating,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: controller.isRatingLoading.value
+                          ? const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Text('Submitting...'),
+                              ],
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.star, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Submit Rating',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  );
+                }),
+              ],
+            );
+          }),
         ],
       ),
     );
@@ -861,7 +1438,7 @@ class LessonDetailScreen extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildDebugRow('Video ID', lesson.video.videoId?.toString() ?? 'N/A'),
+                _buildDebugRow('Video ID', lesson.video.videoId.toString()),
                 _buildDebugRow('Video Status', lesson.video.processingStatus),
                 _buildDebugRow('Range Video URL', controller.getVideoStreamUrl()),
                 _buildDebugRow('Is Enrolled', controller.isEnrolled.value.toString()),
@@ -871,6 +1448,18 @@ class LessonDetailScreen extends StatelessWidget {
                 _buildDebugRow('Video Loading', controller.isVideoLoading.value.toString()),
                 _buildDebugRow('Video Error', controller.videoError.value.isEmpty ? 'None' : controller.videoError.value),
                 _buildDebugRow('Retry Count', controller.retryCount.value.toString()),
+                _buildDebugRow('Enrollment ID', controller.enrollmentId.value.toString()),
+                _buildDebugRow('Last Watched', '${controller.lastWatchedSeconds.value}s'),
+                _buildDebugRow('Is Completed', controller.isCompleted.value.toString()),
+                _buildDebugRow('Total Duration', '${controller.totalVideoDuration.value}s'),
+                _buildDebugRow('User Rating', controller.userRating.value.toString()),
+                _buildDebugRow('Rating Submitted', controller.isRatingSubmitted.value.toString()),
+                _buildDebugRow('Rating Loading', controller.isRatingLoading.value.toString()),
+                _buildDebugRow('Rating Error', controller.ratingError.value.isEmpty ? 'None' : controller.ratingError.value),
+                _buildDebugRow('Average Rating', controller.averageRating.value.toStringAsFixed(1)),
+                _buildDebugRow('Total Ratings', controller.totalRating.value.toString()),
+                _buildDebugRow('Avg Rating Loading', controller.isAverageRatingLoading.value.toString()),
+                _buildDebugRow('Avg Rating Error', controller.averageRatingError.value.isEmpty ? 'None' : controller.averageRatingError.value),
               ],
             );
           }),
@@ -907,6 +1496,36 @@ class LessonDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 ),
                 child: const Text('Init Player', style: TextStyle(fontSize: 12)),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => controller.updateProgressManually(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                child: const Text('Update Progress', style: TextStyle(fontSize: 12)),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => controller.submitRating(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                child: const Text('Test Rating', style: TextStyle(fontSize: 12)),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => controller.fetchAverageRating(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                child: const Text('Fetch Avg Rating', style: TextStyle(fontSize: 12)),
               ),
             ],
           ),
