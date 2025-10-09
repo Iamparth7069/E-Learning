@@ -42,4 +42,13 @@ class ApiUrl {
   static const getLessonsByCourseIdAlternative = '${baseUrl}api/v1/lessons/course/';
   static const getAllPopularCourse =  '${baseUrl}api/v1/courses/popular';
   static const getCoursesBySubCategory = '${baseUrl}api/v1/courses/subcategory/';
+  
+  // Settings API endpoints
+  static const updateProfile = '${baseUrl}api/v1/users/profile';
+  static const getProfile = '${baseUrl}api/v1/users/profile';
+  static const notificationSettings = '${baseUrl}api/v1/users/notification-settings';
+  static const privacySettings = '${baseUrl}api/v1/users/privacy-settings';
+  static const appSettings = '${baseUrl}api/v1/users/app-settings';
+  static const clearCache = '${baseUrl}api/v1/users/clear-cache';
+  static const contactSupport = '${baseUrl}api/v1/support/contact';
 }

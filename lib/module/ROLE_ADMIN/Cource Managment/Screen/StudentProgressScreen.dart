@@ -738,3 +738,5 @@ class StudentProgressScreen extends StatelessWidget {
     return 'Student has just enrolled in the course';
   }
 }
+
+
