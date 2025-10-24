@@ -203,10 +203,7 @@ class LessonDetailScreen extends StatelessWidget {
                 // Video Section
                 _buildVideoSection(controller),
                 const SizedBox(height: 16),
-                
-                // Lesson Info Section
-                _buildLessonInfoSection(controller),
-                const SizedBox(height: 16),
+
                 
                 // Content Section
                 _buildContentSection(controller),
@@ -220,9 +217,10 @@ class LessonDetailScreen extends StatelessWidget {
                 _buildRatingSection(controller),
                 const SizedBox(height: 16),
                 
-                // Debug Section (only in debug mode)
-                if (true) // Change to false in production
-                  _buildDebugSection(controller),
+                // // Course Completion Section
+                // _buildCourseCompletionSection(controller),
+                const SizedBox(height: 16),
+                
               ],
             ),
           ),
@@ -392,25 +390,7 @@ class LessonDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.video_library,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      lesson.video.videoName,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -1407,164 +1387,226 @@ class LessonDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDebugSection(LessonDetailController controller) {
+  Widget _buildCourseCompletionSection(LessonDetailController controller) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.green[50]!,
+            Colors.teal[50]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Debug Information',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.school_rounded,
+                  color: Colors.green[700],
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Course Progress',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              Obx(() {
+                if (controller.isCourseCompleted.value) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green[100],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.green[700],
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Completed',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           
+          // Course completion status
           Obx(() {
-            final lesson = controller.lesson;
-            if (lesson == null) {
-              return const Text('No lesson data available');
+            if (controller.isCourseCompleted.value) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.celebration,
+                      color: Colors.green[600],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Congratulations! You have successfully completed this course.',
+                        style: TextStyle(
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }
             
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildDebugRow('Video ID', lesson.video.videoId.toString()),
-                _buildDebugRow('Video Status', lesson.video.processingStatus),
-                _buildDebugRow('Range Video URL', controller.getVideoStreamUrl()),
-                _buildDebugRow('Is Enrolled', controller.isEnrolled.value.toString()),
-                _buildDebugRow('Is Video Ready', controller.isVideoReady.value.toString()),
-                _buildDebugRow('Preview Mode', controller.previewMode.value.toString()),
-                _buildDebugRow('Player Initialized', controller.isPlayerInitialized.value.toString()),
-                _buildDebugRow('Video Loading', controller.isVideoLoading.value.toString()),
-                _buildDebugRow('Video Error', controller.videoError.value.isEmpty ? 'None' : controller.videoError.value),
-                _buildDebugRow('Retry Count', controller.retryCount.value.toString()),
-                _buildDebugRow('Enrollment ID', controller.enrollmentId.value.toString()),
-                _buildDebugRow('Last Watched', '${controller.lastWatchedSeconds.value}s'),
-                _buildDebugRow('Is Completed', controller.isCompleted.value.toString()),
-                _buildDebugRow('Total Duration', '${controller.totalVideoDuration.value}s'),
-                _buildDebugRow('User Rating', controller.userRating.value.toString()),
-                _buildDebugRow('Rating Submitted', controller.isRatingSubmitted.value.toString()),
-                _buildDebugRow('Rating Loading', controller.isRatingLoading.value.toString()),
-                _buildDebugRow('Rating Error', controller.ratingError.value.isEmpty ? 'None' : controller.ratingError.value),
-                _buildDebugRow('Average Rating', controller.averageRating.value.toStringAsFixed(1)),
-                _buildDebugRow('Total Ratings', controller.totalRating.value.toString()),
-                _buildDebugRow('Avg Rating Loading', controller.isAverageRatingLoading.value.toString()),
-                _buildDebugRow('Avg Rating Error', controller.averageRatingError.value.isEmpty ? 'None' : controller.averageRatingError.value),
+                const Text(
+                  'Course Completion',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Manual course completion button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: controller.isCourseCompletionLoading.value
+                        ? null
+                        : controller.markCourseAsComplete,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: controller.isCourseCompletionLoading.value
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Text('Completing Course...'),
+                            ],
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.school, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Mark Course as Complete',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+                
+                // Error Message
+                Obx(() {
+                  if (controller.courseCompletionError.value.isNotEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(top: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red[600],
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              controller.courseCompletionError.value,
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
               ],
             );
           }),
-          
-          const SizedBox(height: 12),
-          
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: () => controller.testVideoUrl(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-                child: const Text('Test URL', style: TextStyle(fontSize: 12)),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () => controller.testRangeRequest(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-                child: const Text('Test Range', style: TextStyle(fontSize: 12)),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () => controller.initializeVideoPlayer(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-                child: const Text('Init Player', style: TextStyle(fontSize: 12)),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () => controller.updateProgressManually(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-                child: const Text('Update Progress', style: TextStyle(fontSize: 12)),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () => controller.submitRating(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-                child: const Text('Test Rating', style: TextStyle(fontSize: 12)),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () => controller.fetchAverageRating(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-                child: const Text('Fetch Avg Rating', style: TextStyle(fontSize: 12)),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildDebugRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.black87,
-                fontFamily: 'monospace',
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }

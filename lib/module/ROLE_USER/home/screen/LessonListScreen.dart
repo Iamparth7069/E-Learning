@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:sizer/sizer.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../controller/LessonController.dart';
 import '../Model/LessonModel.dart';
@@ -234,14 +235,7 @@ class LessonListScreen extends StatelessWidget {
                         ? CachedNetworkImage(
                             imageUrl: lesson.image!.imageUrl,
                             fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: Colors.grey[200],
-                              child: Icon(
-                                Icons.play_circle_outline,
-                                size: 32,
-                                color: Colors.grey[400],
-                              ),
-                            ),
+                            placeholder: (context, url) => _buildLessonImagePlaceholder(),
                             errorWidget: (context, url, error) => Container(
                               color: Colors.grey[200],
                               child: Icon(
@@ -251,14 +245,7 @@ class LessonListScreen extends StatelessWidget {
                               ),
                             ),
                           )
-                        : Container(
-                            color: Colors.grey[200],
-                            child: Icon(
-                              Icons.play_circle_outline,
-                              size: 32,
-                              color: Colors.grey[400],
-                            ),
-                          ),
+                        : _buildLessonImagePlaceholder(),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -394,6 +381,59 @@ class LessonListScreen extends StatelessWidget {
               fontSize: 10.sp,
               fontWeight: FontWeight.w600,
               color: badgeColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLessonImagePlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.grey[200]!,
+            Colors.grey[300]!,
+            Colors.grey[200]!,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Stack(
+        children: [
+          // Shimmer effect
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: LoadingAnimationWidget.staggeredDotsWave(
+                color: Colors.white.withOpacity(0.8),
+                size: 15,
+              ),
+            ),
+          ),
+          // Loading animation
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                LoadingAnimationWidget.threeArchedCircle(
+                  color: Colors.blue[400]!,
+                  size: 30,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Loading",
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

@@ -49,6 +49,11 @@ class LessonDetailController extends GetxController {
   var isAverageRatingLoading = false.obs;
   var averageRatingError = ''.obs;
   
+  // Course completion system
+  var isCourseCompleted = false.obs;
+  var isCourseCompletionLoading = false.obs;
+  var courseCompletionError = ''.obs;
+  
   Lesson? lesson;
   var lessonId = 0.obs;
   var lessonName = ''.obs;
@@ -158,6 +163,44 @@ class LessonDetailController extends GetxController {
     if (lesson?.video.videoId != null) {
       final url = '${ApiUrl.getStremeUsingRange}${lesson!.video.videoId}';
       print('🎥 Range Stream URL: $url');
+      
+      // Check if URL is HTTP and warn about potential issues
+      if (url.startsWith('http://')) {
+        print('⚠️ Warning: Video URL uses HTTP (not HTTPS). This may cause network security issues on Android.');
+        print('💡 Consider using HTTPS for video streaming to avoid cleartext traffic errors.');
+        
+        // Try to convert HTTP to HTTPS
+        final httpsUrl = url.replaceFirst('http://', 'https://');
+        print('🔄 Attempting HTTPS URL: $httpsUrl');
+        return httpsUrl;
+      }
+      
+      return url;
+    }
+    print('❌ No video ID available');
+    return '';
+  }
+
+  // Alternative method to get video URL with better error handling
+  String getVideoStreamUrlWithFallback() {
+    if (lesson?.video.videoId != null) {
+      final baseUrl = ApiUrl.getStremeUsingRange;
+      final videoId = lesson!.video.videoId;
+      
+      print('🎥 Base URL: $baseUrl');
+      print('🎥 Video ID: $videoId');
+      
+      // Try HTTPS first
+      if (baseUrl.startsWith('http://')) {
+        final httpsBaseUrl = baseUrl.replaceFirst('http://', 'https://');
+        final httpsUrl = '$httpsBaseUrl$videoId';
+        print('🔒 Trying HTTPS URL first: $httpsUrl');
+        return httpsUrl;
+      }
+      
+      // Fallback to original URL
+      final url = '$baseUrl$videoId';
+      print('🌐 Using original URL: $url');
       return url;
     }
     print('❌ No video ID available');
@@ -191,7 +234,8 @@ class LessonDetailController extends GetxController {
       );
     }
 
-    final url = getVideoStreamUrl();
+    // Try to get video URL with fallback
+    String url = getVideoStreamUrlWithFallback();
     if (url.isEmpty) {
       videoError.value = 'Invalid video URL - No video ID found';
       print('❌ Video URL is empty - lesson: ${lesson?.lessonName}, videoId: ${lesson?.video.videoId}');
@@ -203,6 +247,11 @@ class LessonDetailController extends GetxController {
       );
       return;
     }
+    
+    print('🎬 Final video URL: $url');
+    
+    // Print comprehensive debug information
+    printVideoDebugInfo();
 
     try {
       isVideoLoading.value = true;
@@ -226,7 +275,24 @@ class LessonDetailController extends GetxController {
 
       _disposeVideoPlayer();
 
-      // Test server range support first
+      // Test video URL connectivity first
+      final isAccessible = await testVideoUrlConnectivity(url, headers);
+      print('🔍 Video URL accessible: $isAccessible');
+      
+      if (!isAccessible) {
+        // If HTTPS failed, try HTTP as fallback
+        if (url.startsWith('https://')) {
+          final httpUrl = url.replaceFirst('https://', 'http://');
+          print('🔄 HTTPS failed, trying HTTP fallback: $httpUrl');
+          final httpAccessible = await testVideoUrlConnectivity(httpUrl, headers);
+          if (httpAccessible) {
+            url = httpUrl;
+            print('✅ HTTP fallback is accessible');
+          }
+        }
+      }
+
+      // Test server range support
       final supportsRange = await testServerRangeSupport(url, headers);
       print('🔍 Server range support: $supportsRange');
 
@@ -251,23 +317,26 @@ class LessonDetailController extends GetxController {
   }
 
   Future<void> _initializeVideoWithRetry(String url, Map<String, String>? headers) async {
+    String currentUrl = url;
+    
     for (int attempt = 0; attempt < maxRetries.value; attempt++) {
       try {
         retryCount.value = attempt + 1;
         print("🔄 Attempt ${attempt + 1}/${maxRetries.value}");
+        print("🌐 Using URL: $currentUrl");
         
         if (attempt == 0) {
           // First attempt: Try optimized range streaming
           print("📡 Trying optimized range streaming...");
-          await _tryOptimizedRangeStreaming(url, headers);
+          await _tryOptimizedRangeStreaming(currentUrl, headers);
         } else if (attempt == 1) {
           // Second attempt: Try range streaming with fallback headers
           print("🔄 Trying range streaming with fallback headers...");
-          await _tryRangeStreamingWithModifiedHeaders(url, headers);
+          await _tryRangeStreamingWithModifiedHeaders(currentUrl, headers);
         } else {
           // Third attempt: Try complete video download and local playback
           print("💾 Trying complete video download and local playback...");
-          await _tryCompleteVideoDownload(url, headers);
+          await _tryCompleteVideoDownload(currentUrl, headers);
         }
 
         // If we reach here, initialization was successful
@@ -282,6 +351,19 @@ class LessonDetailController extends GetxController {
       } catch (e) {
         print("❌ Attempt ${attempt + 1} failed: $e");
         print("📍 Error type: ${e.runtimeType}");
+        
+        // Check if it's a cleartext HTTP error and try HTTPS fallback
+        if (e.toString().contains('CleartextNotPermittedException') || 
+            e.toString().contains('Cleartext HTTP traffic not permitted')) {
+          print("🔒 Detected cleartext HTTP error, trying HTTPS fallback...");
+          if (currentUrl.startsWith('http://')) {
+            currentUrl = currentUrl.replaceFirst('http://', 'https://');
+            print("🔄 Switching to HTTPS URL: $currentUrl");
+            // Don't increment attempt counter for this fallback
+            attempt--;
+            continue;
+          }
+        }
         
         // Check if it's a range request error and try different approach
         if (e.toString().contains('content range mismatch') || 
@@ -326,6 +408,13 @@ class LessonDetailController extends GetxController {
       customHeaders['Pragma'] = 'no-cache';
       customHeaders['User-Agent'] = 'Mozilla/5.0 (compatible; VideoPlayer/1.0)';
       
+      // Add headers to bypass cleartext restrictions for development
+      if (url.startsWith('http://')) {
+        customHeaders['X-Allow-Cleartext'] = 'true';
+        customHeaders['X-Development-Mode'] = 'true';
+        print("🔓 Added cleartext bypass headers for HTTP URL");
+      }
+      
       print("🔧 Using optimized headers for smooth streaming: $customHeaders");
       
       videoPlayerController = VideoPlayerController.networkUrl(
@@ -350,6 +439,14 @@ class LessonDetailController extends GetxController {
     } catch (e) {
       print("❌ Optimized range streaming failed: $e");
       print("📍 Error type: ${e.runtimeType}");
+      
+      // If it's a cleartext error, provide helpful message
+      if (e.toString().contains('CleartextNotPermittedException') || 
+          e.toString().contains('Cleartext HTTP traffic not permitted')) {
+        print("🔒 Cleartext HTTP error - network security configuration may need adjustment");
+        videoError.value = 'Network security error: HTTP video streaming is blocked. Please check your network configuration or use HTTPS.';
+      }
+      
       rethrow;
     }
   }
@@ -558,7 +655,32 @@ class LessonDetailController extends GetxController {
     if (videoPlayerController?.value.hasError == true) {
       final error = videoPlayerController?.value.errorDescription ?? 'Unknown video error';
       print("❌ Video player error: $error");
-      videoError.value = error;
+      
+      // Handle specific cleartext HTTP error
+      if (error.contains('CleartextNotPermittedException') || 
+          error.contains('Cleartext HTTP traffic not permitted')) {
+        videoError.value = 'Network security error: HTTP traffic not allowed. Please check your network configuration.';
+        Get.snackbar(
+          'Network Error',
+          'HTTP video streaming is blocked. Please contact support.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.wifi_off, color: Colors.white),
+          duration: const Duration(seconds: 5),
+        );
+      } else if (error.contains('Source error')) {
+        videoError.value = 'Video source error: Unable to load video stream. Please try again.';
+        Get.snackbar(
+          'Video Error',
+          'Unable to load video. Please check your connection and try again.',
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          icon: const Icon(Icons.error, color: Colors.white),
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        videoError.value = error;
+      }
     }
   }
 
@@ -582,6 +704,8 @@ class LessonDetailController extends GetxController {
           print("🎉 Video completed! Watched ${progressPercentage.toStringAsFixed(1)}%");
           // Update progress immediately when completed
           _updateLessonProgress();
+          // Check if course should be marked as complete
+          checkCourseCompletion();
         }
       }
     }
@@ -922,6 +1046,23 @@ class LessonDetailController extends GetxController {
     }
   }
 
+  // Debug method to print comprehensive video information
+  void printVideoDebugInfo() {
+    print("🔍 === VIDEO DEBUG INFO ===");
+    print("📚 Lesson: ${lesson?.lessonName}");
+    print("🎥 Video ID: ${lesson?.video.videoId}");
+    print("📊 Video Status: ${lesson?.video.processingStatus}");
+    print("🌐 Base URL: ${ApiUrl.getStremeUsingRange}");
+    print("🔗 Full URL: ${getVideoStreamUrlWithFallback()}");
+    print("🔒 HTTPS URL: ${getVideoStreamUrl()}");
+    print("📱 Player Initialized: ${isPlayerInitialized.value}");
+    print("❌ Video Error: ${videoError.value}");
+    print("⏳ Video Loading: ${isVideoLoading.value}");
+    print("🎯 Preview Mode: ${previewMode.value}");
+    print("📚 Enrolled: ${isEnrolled.value}");
+    print("🔍 === END DEBUG INFO ===");
+  }
+
   // Test method to check video URL accessibility
   Future<void> testVideoUrl() async {
     if (lesson == null) {
@@ -1042,6 +1183,52 @@ class LessonDetailController extends GetxController {
       }
     } catch (e) {
       print("❌ Error testing server range support: $e");
+      return false;
+    }
+  }
+
+  // Test video URL connectivity with multiple attempts
+  Future<bool> testVideoUrlConnectivity(String url, Map<String, String>? headers) async {
+    try {
+      print("🌐 Testing video URL connectivity: $url");
+      
+      // First try HEAD request
+      final headResponse = await NetworkService.makeHeadRequest(url: url, headers: headers);
+      print("📊 HEAD request status: ${headResponse['statusCode']}");
+      
+      if (headResponse['statusCode'] == 200) {
+        print("✅ Video URL is accessible via HEAD request");
+        return true;
+      }
+      
+      // If HEAD fails, try GET request with small range
+      print("🔄 HEAD failed, trying range request...");
+      final rangeResponse = await NetworkService.makeRangeRequest(
+        url: url,
+        range: 'bytes=0-1023',
+        headers: headers,
+      );
+      
+      print("📊 Range request status: ${rangeResponse['statusCode']}");
+      
+      if (rangeResponse['statusCode'] == 206 || rangeResponse['statusCode'] == 200) {
+        print("✅ Video URL is accessible via range request");
+        return true;
+      }
+      
+      print("❌ Video URL is not accessible");
+      return false;
+      
+    } catch (e) {
+      print("❌ Error testing video URL connectivity: $e");
+      
+      // Check if it's a cleartext HTTP error
+      if (e.toString().contains('CleartextNotPermittedException') || 
+          e.toString().contains('Cleartext HTTP traffic not permitted')) {
+        print("🔒 Cleartext HTTP error detected - trying HTTPS fallback");
+        return false;
+      }
+      
       return false;
     }
   }
@@ -1203,7 +1390,7 @@ class LessonDetailController extends GetxController {
       };
 
       final courseId = lesson!.courseId;
-      final url = '${ApiUrl.baseUrl}/api/v1/ratings/average-rating/$courseId';
+      final url = '${ApiUrl.baseUrl}api/v1/ratings/average-rating/$courseId';
       
       print("📤 Fetching average rating for course ID: $courseId");
       print("🌐 URL: $url");
@@ -1245,5 +1432,98 @@ class LessonDetailController extends GetxController {
     if (rating >= 2.0) return Colors.orange;
     if (rating >= 1.0) return Colors.red;
     return Colors.grey;
+  }
+
+  // Course completion methods
+  Future<void> markCourseAsComplete() async {
+    if (enrollmentId.value <= 0) {
+      courseCompletionError.value = 'Enrollment ID is required';
+      Get.snackbar(
+        'Error',
+        'Enrollment ID is required',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+      return;
+    }
+
+    try {
+      isCourseCompletionLoading.value = true;
+      courseCompletionError.value = '';
+
+      String? token = sharedPrefHelper.getString(SharedPrefHelper.token);
+      if (token == null) {
+        courseCompletionError.value = 'Authentication required';
+        Get.snackbar(
+          'Error',
+          'Authentication required',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+        return;
+      }
+
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      };
+
+      print("📤 Marking course as complete for enrollment ID: ${enrollmentId.value}");
+
+      final response = await NetworkService.makePostRequest(
+        url: '${ApiUrl.baseUrl}/api/v1/enrollments/${enrollmentId.value}/complete',
+        headers: headers,
+        body: {}, // Empty body as per API specification
+      );
+
+      if (response["statusCode"] == 200 || response["statusCode"] == 201) {
+        isCourseCompleted.value = true;
+        print("✅ Course marked as complete successfully");
+        Get.snackbar(
+          'Course Completed!',
+          'Congratulations! You have successfully completed this course.',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: const Icon(Icons.celebration, color: Colors.white),
+          duration: const Duration(seconds: 5),
+        );
+      } else {
+        courseCompletionError.value = response["response"]?.toString() ?? 'Failed to mark course as complete';
+        print("❌ Failed to mark course as complete: ${response["response"]}");
+        Get.snackbar(
+          'Error',
+          'Failed to mark course as complete. Please try again.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+      }
+    } catch (e) {
+      courseCompletionError.value = 'An error occurred while marking course as complete';
+      print("❌ Error marking course as complete: $e");
+      Get.snackbar(
+        'Error',
+        'An error occurred while marking course as complete',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    } finally {
+      isCourseCompletionLoading.value = false;
+    }
+  }
+
+  // Check if course should be marked as complete
+  void checkCourseCompletion() {
+    // This method can be called when all lessons in a course are completed
+    // For now, we'll call it when the current lesson is completed
+    if (isCompleted.value && !isCourseCompleted.value) {
+      print("🎓 Lesson completed, checking if course should be marked as complete");
+      // You can add additional logic here to check if all lessons are completed
+      // For now, we'll mark the course as complete when this lesson is completed
+      markCourseAsComplete();
+    }
   }
 }

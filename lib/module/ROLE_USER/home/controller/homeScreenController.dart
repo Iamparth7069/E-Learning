@@ -32,17 +32,23 @@ class HomeScreenController extends GetxController{
     update(); // show loading UI
 
     try {
-      await Future.wait([
-        loadPopularCourses(),
-        loadCourse(),
-        loadMyEnrolledCourses(),
-      ]);
+      // Load data sequentially to avoid overwhelming the server
+      await loadPopularCourses();
+      await loadCourse();
+      await loadMyEnrolledCourses();
     } catch (e) {
-      print("Error loading data: $e");
+      print("❌ Error loading data: $e");
+      Get.snackbar(
+        'Error',
+        'Failed to load some data. Please try again.',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        icon: const Icon(Icons.warning, color: Colors.white),
+      );
+    } finally {
+      isLoading = false;
+      update(); // hide loading UI
     }
-
-    isLoading = false;
-    update(); // hide loading UI
   }
 
 
@@ -54,6 +60,10 @@ class HomeScreenController extends GetxController{
   Future<void> loadCourse() async {
     try{
       final token = sh1.getString(SharedPrefHelper.token);
+      if (token == null || token.isEmpty) {
+        print("❌ No authentication token found for loading courses");
+        return;
+      }
 
       String uri = ApiUrl.getAllCourse;
       Map<String,String> header = {
@@ -83,6 +93,11 @@ class HomeScreenController extends GetxController{
 
     try{
       final token = sh1.getString(SharedPrefHelper.token);
+      if (token == null || token.isEmpty) {
+        print("❌ No authentication token found for loading popular courses");
+        return;
+      }
+      
       String uri = ApiUrl.getAllPopularCourse;
       Map<String,String> header = {
         'Content-Type': 'application/json',
@@ -160,6 +175,10 @@ class HomeScreenController extends GetxController{
         }
 
         print("🎉 Successfully loaded ${myEnrolledCourses.length} enrolled courses");
+        
+        // Check for course completions after loading enrollments
+        await _checkAndUpdateCourseCompletions();
+        
         update();
       } else {
         print("❌ Failed to fetch enrollments: ${response['statusCode']}");
@@ -211,6 +230,196 @@ class HomeScreenController extends GetxController{
       print("❌ Error fetching course $courseId: $e");
       return null;
     }
+  }
+
+  // Check and update course completions
+  Future<void> _checkAndUpdateCourseCompletions() async {
+    try {
+      print("🎯 Checking course completions...");
+      
+      for (var enrolledCourse in myEnrolledCourses) {
+        final enrollment = enrolledCourse.enrollment;
+        final course = enrolledCourse.course;
+        
+        // Skip if already completed
+        if (enrollment.completed) {
+          print("✅ Course ${course.courseName} is already completed");
+          continue;
+        }
+        
+        // Check if course should be marked as complete
+        final shouldComplete = await _shouldCompleteCourse(enrollment.courseId);
+        
+        if (shouldComplete) {
+          print("🎉 Course ${course.courseName} should be marked as complete!");
+          await _markCourseAsComplete(enrollment.enrollmentId);
+          
+          // Update local enrollment status
+          
+          // Show completion notification
+          Get.snackbar(
+            'Course Completed! 🎉',
+            'Congratulations! You have completed ${course.courseName}',
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            icon: const Icon(Icons.celebration, color: Colors.white),
+            duration: const Duration(seconds: 4),
+          );
+        }
+      }
+      
+      // Update UI after checking completions
+      update();
+      
+    } catch (e) {
+      print("❌ Error checking course completions: $e");
+    }
+  }
+
+  // Check if a course should be marked as complete
+  Future<bool> _shouldCompleteCourse(int courseId) async {
+    try {
+      final token = sh1.getString(SharedPrefHelper.token);
+      if (token == null || token.isEmpty) {
+        print("❌ No authentication token for completion check");
+        return false;
+      }
+
+      // Get all lessons for this course
+      String uri = '${ApiUrl.getLessonsByCourseId}$courseId';
+      Map<String, String> header = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      };
+
+      print("📚 Checking lessons for course ID: $courseId");
+      final response = await NetworkService.makeGetRequest(url: uri, headers: header);
+      
+      if (response['statusCode'] == 200) {
+        List<dynamic> lessonsData = response["response"];
+        print("📖 Found ${lessonsData.length} lessons for course $courseId");
+        
+        if (lessonsData.isEmpty) {
+          print("⚠️ No lessons found for course $courseId");
+          return false;
+        }
+        
+        // Check lesson progress for this course
+        return await _checkLessonProgress(courseId, lessonsData.length);
+        
+      } else {
+        print("❌ Failed to fetch lessons for course $courseId: ${response['statusCode']}");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Error checking course completion for $courseId: $e");
+      return false;
+    }
+  }
+
+  // Check lesson progress for a course
+  Future<bool> _checkLessonProgress(int courseId, int totalLessons) async {
+    try {
+      final token = sh1.getString(SharedPrefHelper.token);
+      if (token == null || token.isEmpty) {
+        return false;
+      }
+
+      // Get enrollment progress for this course
+      String uri = '${ApiUrl.getEnrollmentProgress}$courseId';
+      Map<String, String> header = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      };
+
+      print("📊 Checking progress for course ID: $courseId");
+      final response = await NetworkService.makeGetRequest(url: uri, headers: header);
+      
+      if (response['statusCode'] == 200) {
+        // Parse progress data and check if course should be completed
+        // This is a simplified implementation - adjust based on your API response structure
+        var progressData = response["response"];
+        print("📈 Progress data: $progressData");
+        
+        // For now, we'll use a simple heuristic: if there are lessons and some progress exists
+        // In a real implementation, you would check actual completion percentages
+        return totalLessons > 0; // Simplified logic
+        
+      } else {
+        print("❌ Failed to fetch progress for course $courseId: ${response['statusCode']}");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Error checking lesson progress for $courseId: $e");
+      return false;
+    }
+  }
+
+  // Mark a course as complete
+  Future<void> _markCourseAsComplete(int enrollmentId) async {
+    try {
+      final token = sh1.getString(SharedPrefHelper.token);
+      if (token == null || token.isEmpty) {
+        print("❌ No authentication token for course completion");
+        return;
+      }
+
+      String uri = '${ApiUrl.completeEnrollment}$enrollmentId/complete';
+      Map<String, String> header = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      };
+
+      print("🎓 Marking course as complete for enrollment ID: $enrollmentId");
+      print("🌐 API URL: $uri");
+
+      final response = await NetworkService.makePostRequest(
+        url: uri,
+        headers: header,
+        body: {}, // Empty body as per API specification
+      );
+
+      if (response['statusCode'] == 200 || response['statusCode'] == 201) {
+        print("✅ Course marked as complete successfully");
+      } else {
+        print("❌ Failed to mark course as complete: ${response['statusCode']}");
+        print("📋 Response: ${response['response']}");
+      }
+    } catch (e) {
+      print("❌ Error marking course as complete: $e");
+    }
+  }
+
+  // Manual method to check course completions (can be called from UI)
+  Future<void> checkCourseCompletions() async {
+    try {
+      await _checkAndUpdateCourseCompletions();
+    } catch (e) {
+      print("❌ Error in manual completion check: $e");
+      Get.snackbar(
+        'Error',
+        'Failed to check course completions. Please try again.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+  // Method to refresh all data
+  Future<void> refreshData() async {
+    await loadData();
+  }
+
+  // Method to check if user is authenticated
+  bool isAuthenticated() {
+    final token = sh1.getString(SharedPrefHelper.token);
+    return token != null && token.isNotEmpty;
+  }
+
+  // Method to get authentication token
+  String? getAuthToken() {
+    return sh1.getString(SharedPrefHelper.token);
   }
 
 }

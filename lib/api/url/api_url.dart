@@ -1,6 +1,6 @@
 class ApiUrl {
-  static const baseUrl = 'https://knapsacked-flor-hilariously.ngrok-free.dev/';
-  //static const baseUrl = 'http://10.154.59.58:8080/';
+  //static const baseUrl = 'https://knapsacked-flor-hilariously.ngrok-free.dev/';
+  static const baseUrl = 'http://10.157.143.160:8080/';
   static const loginApi = '${baseUrl}api/v1/auth/login';
   static const registerApi = '${baseUrl}api/v1/auth/register';
 
@@ -33,6 +33,7 @@ class ApiUrl {
   static const enrollInCourse = '${baseUrl}api/v1/enrollments';
   static const getMyEnrollments = '${baseUrl}api/v1/enrollments/my-enrollment';
   static const getEnrollmentProgress = '${baseUrl}api/v1/enrollments/progress/';
+  static const completeEnrollment = '${baseUrl}api/v1/enrollments/';
   static const getUserById = '${baseUrl}api/v1/users/';
   static const getUserProfile = '${baseUrl}api/v1/users/profile';
   static const changePassword = '${baseUrl}api/v1/users/change-password';
